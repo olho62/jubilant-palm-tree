@@ -7,291 +7,218 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root {
-      --header-bg: rgba(15, 40, 70, 0.7);
-      --cream: #ffffff;
-      --red: #d32f2f;
-      --red-dark: #b71c1c;
-    }
+    :root { --navy:#1a3a5c; --red:#d32f2f; --red-dark:#b71c1c; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'IBM Plex Sans',sans-serif; min-height:100vh; background:#ddeeff; }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'IBM Plex Sans', sans-serif;
-      min-height: 100vh;
-      background-color: #ddeeff;
-    }
-
-    /* ── HEADER ─────────────────────────────── */
+    /* HEADER */
     header {
-      position: sticky; top: 0; z-index: 200;
-      background: #1a3a5c;
-      border-bottom: 1px solid rgba(255,255,255,.1);
-      padding: 14px 28px;
-      display: flex; align-items: center; justify-content: space-between;
+      position:sticky; top:0; z-index:200; background:var(--navy);
+      border-bottom:1px solid rgba(255,255,255,.1);
+      padding:12px 28px; display:flex; align-items:center; justify-content:space-between; gap:12px;
     }
-
-    .brand { display: flex; align-items: center; gap: 14px; }
-
+    .brand { display:flex; align-items:center; gap:14px; flex-shrink:0; }
     .brand-badge {
-      background: var(--red);
-      color: #fff;
-      font-weight: 700; font-size: 13px; letter-spacing: .5px;
-      width: 44px; height: 44px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,.4);
-      flex-shrink: 0;
+      background:var(--red); color:#fff; font-weight:700; font-size:13px; letter-spacing:.5px;
+      width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 2px 8px rgba(0,0,0,.4); flex-shrink:0;
     }
-
-    .brand h1 { color: #f5e6c8; font-size: 18px; font-weight: 600; line-height: 1.2; }
-    .brand p  { color: rgba(245,230,200,.5); font-size: 12px; margin-top: 2px; }
-
-    .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-
+    .brand h1 { color:#f5e6c8; font-size:17px; font-weight:600; line-height:1.2; }
+    .brand p  { color:rgba(245,230,200,.5); font-size:11px; margin-top:2px; }
+    .header-url {
+      font-size:12px; font-weight:600; color:rgba(255,255,255,.4);
+      background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+      border-radius:5px; padding:4px 10px; white-space:nowrap; flex-shrink:0;
+    }
+    .header-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .admin-chip {
-      background: var(--red); color: #fff;
-      font-size: 11px; font-weight: 700; letter-spacing: .6px;
-      padding: 4px 10px; border-radius: 20px;
-      display: none;
+      background:var(--red); color:#fff; font-size:11px; font-weight:700;
+      letter-spacing:.6px; padding:4px 10px; border-radius:20px; display:none;
     }
 
-    /* ── BUTTONS ─────────────────────────────── */
+    /* BUTTONS */
     .btn {
-      padding: 8px 16px; border: none; border-radius: 7px;
-      cursor: pointer; font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 13px; font-weight: 500; transition: all .18s;
+      padding:8px 16px; border:none; border-radius:7px; cursor:pointer;
+      font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:500; transition:all .18s;
     }
-    .btn-primary  { background: var(--red); color: #fff; }
-    .btn-primary:hover  { background: var(--red-dark); transform: translateY(-1px); }
-    .btn-ghost {
-      background: rgba(255,255,255,.1); color: #f5e6c8;
-      border: 1px solid rgba(255,255,255,.18);
-    }
-    .btn-ghost:hover { background: rgba(255,255,255,.2); }
-    .btn-ghost.active { background: rgba(255,255,255,.25); border-color: rgba(255,255,255,.5); }
+    .btn-primary { background:var(--red); color:#fff; }
+    .btn-primary:hover { background:var(--red-dark); transform:translateY(-1px); }
+    .btn-ghost { background:rgba(255,255,255,.1); color:#f5e6c8; border:1px solid rgba(255,255,255,.18); }
+    .btn-ghost:hover { background:rgba(255,255,255,.2); }
+    .btn-ghost.active { background:rgba(255,255,255,.25); border-color:rgba(255,255,255,.5); }
 
-    /* ── ARCHIVE BANNER ─────────────────────── */
+    /* LEGEND */
+    .legend { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    .legend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:3px; }
+    .legend span { font-size:11px; color:rgba(245,230,200,.5); display:flex; align-items:center; }
+
+    /* BANNERS */
     .archive-banner {
-      display: none;
-      background: rgba(0,0,0,.35); color: #f5e6c8;
-      text-align: center; padding: 10px;
-      font-size: 13px; gap: 12px; align-items: center; justify-content: center;
+      display:none; background:rgba(0,0,0,.35); color:#f5e6c8;
+      text-align:center; padding:10px; font-size:13px;
+      gap:12px; align-items:center; justify-content:center;
+    }
+    .patient-warning {
+      background:#fff3cd; border-top:3px solid #e65100; border-bottom:3px solid #e65100;
+      color:#4a2800; text-align:center; padding:11px 28px; font-size:13px; line-height:1.5;
+    }
+    .setup-warn {
+      background:#fff3cd; color:#7a5300; border-bottom:2px solid #ffc107;
+      padding:12px 28px; font-size:13px; text-align:center; display:none;
     }
 
-    /* ── BOARD ───────────────────────────────── */
+    /* BOARD */
     .board {
-      padding: 36px 28px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
-      gap: 28px;
-      max-width: 1600px; margin: 0 auto;
+      padding:32px 28px;
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+      gap:24px; max-width:1600px; margin:0 auto; align-items:start;
     }
 
-    /* ── NOTE CARD ───────────────────────────── */
+    /* NOTE WRAP */
+    .note-wrap {
+      border-radius:8px; overflow:hidden;
+      box-shadow:0 2px 8px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.06);
+      transition:box-shadow .2s;
+    }
+    .note-wrap:hover { box-shadow:0 6px 20px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.07); }
+
+    /* NOTE */
     .note {
-      position: relative;
-      padding: 22px 20px 16px;
-      border-radius: 6px;
-      min-height: 210px;
-      display: flex; flex-direction: column;
-      box-shadow: 0 2px 8px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.06);
-      transition: transform .2s ease, box-shadow .2s ease;
-      cursor: default;
+      padding:18px 18px 14px; display:flex; flex-direction:column;
+      min-height:190px; cursor:pointer; user-select:none;
     }
-
-    .note:hover {
-      transform: translateY(-4px) !important;
-      box-shadow: 0 8px 24px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.06);
-      z-index: 50;
-    }
-
-    /* Colour by retention */
-    .note-2day  { background: #f8bbd0; }
-    .note-4day  { background: #ffe0b2; }
-    .note-1week { background: #fff9c4; }
-    .note-2week { background: #c8e6c9; }
-    .note-1month{ background: #bbdefb; }
-
-    .note-top {
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(0,0,0,.1);
-      margin-bottom: 10px;
-    }
-
-    .note-subject {
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 16px; font-weight: 700;
-      color: #1a1a1a; line-height: 1.3;
-      text-transform: uppercase; letter-spacing: .4px;
-    }
-
-    .note-author {
-      font-size: 12px; color: rgba(0,0,0,.5); margin-top: 5px;
-    }
-
-    .note-body {
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 14px; color: #2c2c2c;
-      line-height: 1.6; flex: 1;
-      word-break: break-word;
-    }
-
-    .note-footer {
-      margin-top: 14px; padding-top: 10px;
-      border-top: 1px solid rgba(0,0,0,.1);
-      display: flex; justify-content: space-between; align-items: flex-end;
-    }
-
-    .note-expiry {
-      font-size: 10px; color: rgba(0,0,0,.45); line-height: 1.4;
-    }
-    .note-expiry.warn { color: #c62828; font-weight: 600; }
-
+    .note-2day  { background:#f8bbd0; }
+    .note-4day  { background:#ffe0b2; }
+    .note-1week { background:#fff9c4; }
+    .note-2week { background:#c8e6c9; }
+    .note-1month{ background:#bbdefb; }
+    .note-top { padding-bottom:9px; border-bottom:1px solid rgba(0,0,0,.1); margin-bottom:9px; }
+    .note-subject { font-size:14px; font-weight:700; color:#1a1a1a; line-height:1.3; text-transform:uppercase; letter-spacing:.4px; }
+    .note-author  { font-size:11px; color:rgba(0,0,0,.5); margin-top:4px; }
+    .note-body    { font-size:14px; color:#2c2c2c; line-height:1.6; flex:1; word-break:break-word; }
+    .note-footer  { margin-top:12px; padding-top:9px; border-top:1px solid rgba(0,0,0,.1); display:flex; justify-content:space-between; align-items:flex-end; }
+    .note-expiry  { font-size:10px; color:rgba(0,0,0,.45); line-height:1.4; }
+    .note-expiry.warn { color:#c62828; font-weight:600; }
     .del-badge {
-      display: inline-block;
-      font-size: 9px; font-weight: 700; letter-spacing: .4px;
-      background: rgba(198,40,40,.12); color: #c62828;
-      padding: 2px 7px; border-radius: 10px; margin-top: 4px;
+      display:inline-block; font-size:9px; font-weight:700; letter-spacing:.4px;
+      background:rgba(198,40,40,.12); color:#c62828; padding:2px 7px; border-radius:10px; margin-top:4px;
     }
-
-    .note-actions { display: flex; gap: 5px; align-items: center; }
-
+    .note-actions { display:flex; gap:5px; align-items:center; }
     .note-btn {
-      width: 28px; height: 28px; border: none; border-radius: 5px;
-      background: rgba(0,0,0,.1); color: rgba(0,0,0,.55);
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      font-size: 13px; transition: all .15s;
+      width:28px; height:28px; border:none; border-radius:5px;
+      background:rgba(0,0,0,.1); color:rgba(0,0,0,.55);
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      font-size:13px; transition:all .15s;
     }
-    .note-btn:hover { background: rgba(0,0,0,.22); color: rgba(0,0,0,.9); }
-    .note-btn.del-req { background: rgba(198,40,40,.12); color: #c62828; }
-    .note-btn.del-req:hover { background: rgba(198,40,40,.25); }
+    .note-btn:hover { background:rgba(0,0,0,.22); color:rgba(0,0,0,.9); }
+    .note-btn.del-req { background:rgba(198,40,40,.12); color:#c62828; }
+    .note-btn.del-req:hover { background:rgba(198,40,40,.25); }
 
-    /* ── EMPTY / LOADING ─────────────────────── */
-    .board-message {
-      grid-column: 1/-1; text-align: center;
-      padding: 80px 20px; color: rgba(255,255,255,.35);
+    /* COMMENT BADGE */
+    .comment-badge {
+      display:inline-flex; flex-direction:column; align-items:flex-end;
+      font-size:11px; font-weight:600; color:rgba(0,0,0,.45);
+      background:rgba(0,0,0,.07); border-radius:8px; padding:3px 8px;
+      cursor:pointer; line-height:1.3; transition:background .15s;
     }
-    .board-message .icon { font-size: 52px; margin-bottom: 14px; }
-    .board-message p { font-size: 15px; }
+    .comment-badge:hover { background:rgba(0,0,0,.13); }
+    .comment-badge.has-comments { background:rgba(26,58,92,.12); color:#1a3a5c; }
+    .comment-badge .cb-last { font-size:9px; font-weight:400; color:rgba(0,0,0,.38); margin-top:1px; }
+    .comment-badge.has-comments .cb-last { color:rgba(26,58,92,.55); }
 
+    /* COMMENTS PANEL */
+    .comments-panel { background:rgba(0,0,0,.04); border-top:1px solid rgba(0,0,0,.1); display:none; flex-direction:column; }
+    .comments-panel.open { display:flex; }
+    .comments-list { padding:12px 16px 0; display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; }
+    .comment-item { background:rgba(255,255,255,.65); border-radius:6px; padding:9px 12px; border-left:3px solid rgba(26,58,92,.25); }
+    .comment-meta { font-size:11px; font-weight:600; color:#1a3a5c; margin-bottom:3px; display:flex; justify-content:space-between; }
+    .comment-meta .ctime { font-weight:400; color:rgba(0,0,0,.4); }
+    .comment-text { font-size:13px; color:#2c2c2c; line-height:1.5; word-break:break-word; }
+
+    /* ADD COMMENT FORM */
+    .comment-form { padding:12px 16px 14px; display:flex; flex-direction:column; gap:7px; border-top:1px solid rgba(0,0,0,.08); margin-top:10px; }
+    .comment-form input, .comment-form textarea {
+      width:100%; padding:7px 10px; border:1.5px solid rgba(0,0,0,.15); border-radius:6px;
+      font-family:'IBM Plex Sans',sans-serif; font-size:13px; color:#1a1a1a;
+      background:rgba(255,255,255,.8); outline:none; transition:border-color .15s;
+    }
+    .comment-form input:focus, .comment-form textarea:focus { border-color:var(--navy); }
+    .comment-form textarea { resize:none; height:58px; }
+    .char-count { font-size:10px; color:rgba(0,0,0,.4); text-align:right; margin-top:-3px; }
+    .char-count.warn { color:#c62828; font-weight:600; }
+    .btn-comment {
+      padding:7px 14px; border:none; border-radius:6px;
+      background:var(--navy); color:#fff;
+      font-family:'IBM Plex Sans',sans-serif; font-size:12px; font-weight:600;
+      cursor:pointer; align-self:flex-end; transition:background .15s;
+    }
+    .btn-comment:hover { background:#0f2a44; }
+
+    /* EMPTY / LOADING */
+    .board-message { grid-column:1/-1; text-align:center; padding:80px 20px; color:rgba(255,255,255,.35); }
+    .board-message .icon { font-size:52px; margin-bottom:14px; }
+    .board-message p { font-size:15px; }
     .spinner {
-      width: 32px; height: 32px; margin: 0 auto 14px;
-      border: 3px solid rgba(255,255,255,.2);
-      border-top-color: rgba(255,255,255,.65);
-      border-radius: 50%;
-      animation: spin .75s linear infinite;
+      width:32px; height:32px; margin:0 auto 14px;
+      border:3px solid rgba(255,255,255,.2); border-top-color:rgba(255,255,255,.65);
+      border-radius:50%; animation:spin .75s linear infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin { to { transform:rotate(360deg); } }
 
-    /* ── MODALS ──────────────────────────────── */
+    /* MODALS */
     .overlay {
-      display: none; position: fixed; inset: 0; z-index: 500;
-      background: rgba(0,0,0,.68); backdrop-filter: blur(5px);
-      align-items: center; justify-content: center;
+      display:none; position:fixed; inset:0; z-index:500;
+      background:rgba(0,0,0,.68); backdrop-filter:blur(5px);
+      align-items:center; justify-content:center;
     }
-    .overlay.open { display: flex; }
-
+    .overlay.open { display:flex; }
     .modal {
-      background: var(--cream); border-radius: 14px;
-      padding: 32px; width: 90%; max-width: 500px;
-      box-shadow: 0 24px 60px rgba(0,0,0,.55);
-      animation: rise .28s ease;
+      background:#fff; border-radius:14px; padding:32px; width:90%; max-width:500px;
+      box-shadow:0 24px 60px rgba(0,0,0,.55); animation:rise .28s ease; max-height:92vh; overflow-y:auto;
     }
     @keyframes rise { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:none; } }
-
-    .modal h2 {
-      font-family: 'IBM Plex Sans', sans-serif; font-size: 20px; font-weight: 700;
-      color: #1a1a1a; margin-bottom: 22px; text-transform: uppercase; letter-spacing: .5px;
-    }
-
-    .modal p.hint { font-size: 13px; color: #777; margin-bottom: 18px; line-height: 1.5; }
-
-    .fg { margin-bottom: 16px; }
-    .fg label {
-      display: block; font-size: 11px; font-weight: 600;
-      letter-spacing: .5px; text-transform: uppercase; color: #777;
-      margin-bottom: 6px;
-    }
+    .modal h2 { font-size:18px; font-weight:700; color:#1a1a1a; margin-bottom:20px; text-transform:uppercase; letter-spacing:.5px; }
+    .modal p.hint { font-size:13px; color:#777; margin-bottom:18px; line-height:1.5; }
+    .fg { margin-bottom:16px; }
+    .fg label { display:block; font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:#777; margin-bottom:6px; }
     .fg input, .fg textarea, .fg select {
-      width: 100%; padding: 10px 13px;
-      border: 1.5px solid #e0e0e0; border-radius: 7px;
-      font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; color: #1a1a1a;
-      background: #fff; outline: none;
-      transition: border-color .18s;
+      width:100%; padding:10px 13px; border:1.5px solid #e0e0e0; border-radius:7px;
+      font-family:'IBM Plex Sans',sans-serif; font-size:14px; color:#1a1a1a;
+      background:#fff; outline:none; transition:border-color .18s;
     }
-    .fg input:focus, .fg textarea:focus, .fg select:focus { border-color: var(--red); }
-    .fg textarea { min-height: 110px; resize: vertical; }
-
-    .modal-footer {
-      display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px;
-    }
+    .fg input:focus, .fg textarea:focus, .fg select:focus { border-color:var(--red); }
+    .fg textarea { min-height:110px; resize:vertical; }
+    .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:22px; }
     .btn-cancel {
-      background: none; color: #888;
-      border: 1.5px solid #ddd; padding: 8px 16px;
-      border-radius: 7px; cursor: pointer;
-      font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 500;
+      background:none; color:#888; border:1.5px solid #ddd; padding:8px 16px; border-radius:7px;
+      cursor:pointer; font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:500;
     }
-    .btn-cancel:hover { background: #f5f5f5; }
+    .btn-cancel:hover { background:#f5f5f5; }
 
-    /* ── TOAST ───────────────────────────────── */
+    /* TOAST */
     .toast {
-      position: fixed; bottom: 22px; right: 22px; z-index: 900;
-      background: #1a1a1a; color: #fff;
-      padding: 11px 18px; border-radius: 8px; font-size: 14px;
-      transform: translateY(70px); opacity: 0;
-      transition: all .28s ease; pointer-events: none;
-      max-width: 320px;
+      position:fixed; bottom:22px; right:22px; z-index:900;
+      background:#1a1a1a; color:#fff; padding:11px 18px; border-radius:8px; font-size:14px;
+      transform:translateY(70px); opacity:0; transition:all .28s ease; pointer-events:none; max-width:320px;
     }
-    .toast.show { transform: none; opacity: 1; }
-    .toast.ok  { border-left: 4px solid #43a047; }
-    .toast.err { border-left: 4px solid var(--red); }
+    .toast.show { transform:none; opacity:1; }
+    .toast.ok  { border-left:4px solid #43a047; }
+    .toast.err { border-left:4px solid var(--red); }
 
-    /* ── SETUP WARNING ───────────────────────── */
-    .setup-warn {
-      background: #fff3cd; color: #7a5300;
-      border-bottom: 2px solid #ffc107;
-      padding: 12px 28px; font-size: 13px; text-align: center;
-      display: none;
-    }
-    .setup-warn a { color: #5c3d00; font-weight: 600; }
-
-    /* ── PATIENT WARNING ─────────────────────── */
-    .patient-warning {
-      background: #fff3cd;
-      border-top: 3px solid #e65100;
-      border-bottom: 3px solid #e65100;
-      color: #4a2800;
-      text-align: center;
-      padding: 12px 28px;
-      font-size: 13.5px;
-      line-height: 1.5;
-    }
-
-    /* ── PRINT ───────────────────────────────── */
+    /* PRINT */
     @media print {
-      header, .note-actions, .setup-warn, .archive-banner,
-      .overlay, .toast { display: none !important; }
-      body { background: #fff; }
-      .note { box-shadow: 0 0 0 1px #ccc; }
+      header, .note-actions, .setup-warn, .archive-banner, .patient-warning,
+      .comment-form, .overlay, .toast { display:none !important; }
+      body { background:#fff; }
+      .note-wrap { box-shadow:0 0 0 1px #ccc; }
+      .comments-panel { display:flex !important; }
     }
-
-    /* colour key legend */
-    .legend {
-      display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
-    }
-    .legend-dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      display: inline-block; margin-right: 4px;
-    }
-    .legend span { font-size: 11px; color: rgba(245,230,200,.55); display: flex; align-items: center; }
   </style>
 </head>
 <body>
 
 <div class="setup-warn" id="setupWarn">
-  ⚠️ <strong>Supabase not configured yet.</strong> Open this file in a text editor and fill in your
-  <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> near the top of the &lt;script&gt; section.
-  <a href="https://supabase.com" target="_blank">Create a free account →</a>
+  ⚠️ <strong>Supabase not configured.</strong> Add your SUPABASE_URL and SUPABASE_ANON_KEY in the script section.
 </div>
 
 <header>
@@ -302,8 +229,9 @@
       <p>QEQM Hospital · Margate</p>
     </div>
   </div>
+  <div class="header-url">tinyurl.com/qitu-nobo</div>
   <div class="header-right">
-    <div class="legend" aria-label="Colour key">
+    <div class="legend">
       <span><span class="legend-dot" style="background:#f8bbd0"></span>2d</span>
       <span><span class="legend-dot" style="background:#ffe0b2"></span>4d</span>
       <span><span class="legend-dot" style="background:#fff9c4"></span>1w</span>
@@ -312,11 +240,10 @@
     </div>
     <div class="admin-chip" id="adminChip">ADMIN</div>
     <button class="btn btn-ghost" id="archiveBtn" onclick="toggleArchive()">📦 Archive</button>
-    <button class="btn btn-ghost" id="adminBtn" onclick="toggleAdmin()" title="Admin login">🔐</button>
+    <button class="btn btn-ghost" onclick="toggleAdmin()" title="Admin login">🔐</button>
     <button class="btn btn-primary" onclick="openAdd()">＋ Add Note</button>
   </div>
 </header>
-
 
 <div class="archive-banner" id="archiveBanner">
   📦 Viewing the archive — notes here have passed their retention period.
@@ -333,25 +260,16 @@
   <div class="board-message"><div class="spinner"></div><p>Loading notes…</p></div>
 </div>
 
-<!-- ── ADD NOTE MODAL ───────────────────────── -->
+<!-- ADD NOTE MODAL -->
 <div class="overlay" id="addOverlay">
   <div class="modal">
-    <h2>ADD A NOTE</h2>
+    <h2>Add a Note</h2>
     <div style="background:#fff3cd;border-left:4px solid #e65100;padding:10px 14px;border-radius:5px;font-size:12.5px;color:#4a2800;margin-bottom:20px;line-height:1.5">
       ⚠️ <strong>No patient information.</strong> Do not include patient names, NHS numbers, dates of birth, diagnoses or any other identifiable data.
     </div>
-    <div class="fg">
-      <label>Your Name *</label>
-      <input id="fName" type="text" placeholder="e.g. Dr Ahmed / Sister Patel" maxlength="80">
-    </div>
-    <div class="fg">
-      <label>Subject *</label>
-      <input id="fSubject" type="text" placeholder="Brief heading for the note" maxlength="100">
-    </div>
-    <div class="fg">
-      <label>Message *</label>
-      <textarea id="fBody" placeholder="Write your note here…"></textarea>
-    </div>
+    <div class="fg"><label>Your Name *</label><input id="fName" type="text" placeholder="e.g. Dr Ahmed / Sister Patel" maxlength="80"></div>
+    <div class="fg"><label>Subject *</label><input id="fSubject" type="text" placeholder="Brief heading for the note" maxlength="100"></div>
+    <div class="fg"><label>Message *</label><textarea id="fBody" placeholder="Write your note here…"></textarea></div>
     <div class="fg">
       <label>Keep this note for *</label>
       <select id="fRetention">
@@ -369,15 +287,12 @@
   </div>
 </div>
 
-<!-- ── REQUEST DELETION MODAL ──────────────── -->
+<!-- REQUEST DELETION MODAL -->
 <div class="overlay" id="delOverlay">
   <div class="modal">
-    <h2>🗑️ Request Deletion</h2>
+    <h2>Request Deletion</h2>
     <p class="hint">Your request will be sent to the board admin for review. You must provide a reason before they can action it.</p>
-    <div class="fg">
-      <label>Reason for deletion *</label>
-      <textarea id="fReason" placeholder="Why should this note be removed?" style="min-height:90px"></textarea>
-    </div>
+    <div class="fg"><label>Reason for deletion *</label><textarea id="fReason" placeholder="Why should this note be removed?" style="min-height:90px"></textarea></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeOverlay('delOverlay')">Cancel</button>
       <button class="btn btn-primary" style="background:#c62828" onclick="submitDelRequest()">Send Request</button>
@@ -388,81 +303,64 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* ════════════════════════════════════════════
-   ⚙️  CONFIGURATION — fill these in
-   ════════════════════════════════════════════ */
+/* ── CONFIGURATION ── */
 const SUPABASE_URL      = 'https://oyvfhuielzejcyqyxtld.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__H3OrPNgHWsgoU2KLSc2Cg_jTRe947E';
-const ADMIN_PASSWORD    = '4dminP4ss26!';            // ← change this to something secure!
-/* ════════════════════════════════════════════ */
+const ADMIN_PASSWORD    = 'QEQM_ITU_2024';
+const MAX_COMMENT       = 180;
 
-if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
-  document.getElementById('setupWarn').style.display = 'block';
-}
+if (SUPABASE_URL.includes('YOUR_')) document.getElementById('setupWarn').style.display = 'block';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let isAdmin       = false;
-let showArchive   = false;
-let pendingDelId  = null;
+let isAdmin      = false;
+let showArchive  = false;
+let pendingDelId = null;
+let savedName    = localStorage.getItem('itu_commenter_name') || '';
 
-// ── Helpers ──────────────────────────────────
+/* ── HELPERS ── */
+const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtDate = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+const fmtTime = d => new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+const fmtDateTime = d => `${fmtDate(d)} ${fmtTime(d)}`;
+const daysLeft = exp => Math.ceil((new Date(exp) - new Date()) / 86400000);
+const retentionClass = {2:'note-2day',4:'note-4day',7:'note-1week',14:'note-2week',30:'note-1month'};
 
-const escHtml = s => String(s)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-
-const fmtDate = d => new Date(d).toLocaleDateString('en-GB',
-  { day:'numeric', month:'short', year:'numeric' });
-
-function daysLeft(expires) {
-  return Math.ceil((new Date(expires) - new Date()) / 86400000);
-}
-
-// Deterministic gentle rotation from note id
-function rotation(id) {
-  const n = [...(id||'x')].reduce((a,c) => a + c.charCodeAt(0), 0);
-  return ((n % 9) - 4).toFixed(1); // -4 to +4 deg
-}
-
-const retentionClass = { 2:'note-2day', 4:'note-4day', 7:'note-1week', 14:'note-2week', 30:'note-1month' };
-
-// ── Load notes ────────────────────────────────
-
+/* ── LOAD NOTES ── */
 async function loadNotes() {
-  // Auto-archive any expired active notes
-  await sb.from('notes')
-    .update({ archived: true })
-    .eq('archived', false)
-    .lt('expires_at', new Date().toISOString());
+  await sb.from('notes').update({archived:true}).eq('archived',false).lt('expires_at',new Date().toISOString());
 
-  const { data, error } = await sb.from('notes')
-    .select('*')
-    .eq('archived', showArchive)
-    .order('created_at', { ascending: false });
+  const {data:notes, error} = await sb.from('notes')
+    .select('*').eq('archived',showArchive).order('created_at',{ascending:false});
 
   const board = document.getElementById('board');
 
   if (error) {
-    board.innerHTML = `<div class="board-message">
-      <div class="icon">⚠️</div>
-      <p>Could not load notes. Check your Supabase configuration.</p>
-    </div>`;
+    board.innerHTML = `<div class="board-message"><div class="icon">⚠️</div><p>Could not load notes. Check Supabase configuration.</p></div>`;
+    return;
+  }
+  if (!notes || !notes.length) {
+    board.innerHTML = `<div class="board-message"><div class="icon">${showArchive?'📦':'📋'}</div><p>${showArchive?'No archived notes yet.':'No notes added yet — be the first!'}</p></div>`;
     return;
   }
 
-  if (!data || !data.length) {
-    board.innerHTML = `<div class="board-message">
-      <div class="icon">${showArchive ? '📦' : '📋'}</div>
-      <p>${showArchive ? 'No archived notes yet.' : 'No notes pinned yet — add the first one!'}</p>
-    </div>`;
-    return;
-  }
+  const noteIds = notes.map(n => n.id);
+  const {data:commentRows} = await sb.from('comments')
+    .select('note_id, created_at').in('note_id', noteIds).order('created_at',{ascending:true});
 
-  board.innerHTML = data.map(n => {
+  const countMap = {};
+  const lastMap  = {};
+  (commentRows||[]).forEach(r => {
+    countMap[r.note_id] = (countMap[r.note_id]||0) + 1;
+    lastMap[r.note_id]  = r.created_at;
+  });
+
+  board.innerHTML = notes.map(n => {
     const cls   = retentionClass[n.retention_days] || 'note-1week';
-    const rot   = rotation(n.id);
     const days  = daysLeft(n.expires_at);
     const soon  = !showArchive && days <= 2;
+    const cCount = countMap[n.id] || 0;
+    const hasC   = cCount > 0;
 
     const expiryText = showArchive
       ? `Archived · was due ${fmtDate(n.expires_at)}`
@@ -470,110 +368,186 @@ async function loadNotes() {
       : days === 1 ? '⚠️ Expires tomorrow'
       : `Expires ${fmtDate(n.expires_at)}`;
 
-    const delBadge = n.deletion_requested
-      ? `<div class="del-badge">🗑 Deletion requested</div>` : '';
-
-    const delBtn = (!n.deletion_requested && !isAdmin)
-      ? `<button class="note-btn del-req" title="Request deletion" onclick="openDelRequest('${n.id}')">✕</button>` : '';
-
+    const delBadge   = n.deletion_requested ? `<div class="del-badge">🗑 Deletion requested</div>` : '';
+    const delBtn     = (!n.deletion_requested && !isAdmin)
+      ? `<button class="note-btn del-req" title="Request deletion" onclick="event.stopPropagation();openDelRequest('${n.id}')">✕</button>` : '';
     const adminDelBtn = isAdmin
-      ? `<button class="note-btn" style="background:rgba(198,40,40,.15);color:#c62828"
-             title="Delete (admin)" onclick="adminDelete('${n.id}')">🗑️</button>` : '';
+      ? `<button class="note-btn" style="background:rgba(198,40,40,.15);color:#c62828" title="Delete note" onclick="event.stopPropagation();adminDelete('${n.id}')">🗑️</button>` : '';
+
+    const badgeLabel = hasC ? `💬 ${cCount} comment${cCount>1?'s':''}` : `💬 Comment`;
+    const badgeLast  = hasC ? `<span class="cb-last">Last: ${fmtDateTime(lastMap[n.id])}</span>` : '';
 
     return `
-      <div class="note ${cls}">
-        <div class="note-top">
-          <div class="note-subject">${escHtml(n.subject)}</div>
-          <div class="note-author">${escHtml(n.name)} · ${fmtDate(n.created_at)}</div>
-        </div>
-        <div class="note-body">${escHtml(n.body).replace(/\n/g,'<br>')}</div>
-        <div class="note-footer">
-          <div>
-            <div class="note-expiry${soon?' warn':''}">${expiryText}</div>
-            ${delBadge}
+      <div class="note-wrap" id="wrap-${n.id}">
+        <div class="note ${cls}" onclick="toggleComments('${n.id}')">
+          <div class="note-top">
+            <div class="note-subject">${escHtml(n.subject)}</div>
+            <div class="note-author">${escHtml(n.name)} · ${fmtDate(n.created_at)}</div>
           </div>
-          <div class="note-actions">
-            <button class="note-btn" title="Print this note" onclick="printNote(this)">🖨️</button>
-            ${delBtn}
-            ${adminDelBtn}
+          <div class="note-body">${escHtml(n.body).replace(/\n/g,'<br>')}</div>
+          <div class="note-footer">
+            <div>
+              <div class="note-expiry${soon?' warn':''}">${expiryText}</div>
+              ${delBadge}
+            </div>
+            <div class="note-actions">
+              <span class="comment-badge ${hasC?'has-comments':''}" id="cbadge-${n.id}">
+                ${badgeLabel}${badgeLast}
+              </span>
+              <button class="note-btn" title="Print this note" onclick="event.stopPropagation();printNote(this)">🖨️</button>
+              ${delBtn}${adminDelBtn}
+            </div>
+          </div>
+        </div>
+        <div class="comments-panel" id="cpanel-${n.id}">
+          <div class="comments-list" id="clist-${n.id}">
+            <div style="font-size:12px;color:#999;text-align:center;padding:8px">Loading…</div>
+          </div>
+          <div class="comment-form">
+            <input type="text" id="cname-${n.id}" placeholder="Your name *" maxlength="80"
+              value="${escHtml(savedName)}"
+              oninput="savedName=this.value;localStorage.setItem('itu_commenter_name',this.value)">
+            <textarea id="cbody-${n.id}" placeholder="Add a comment… (max 180 characters)"
+              maxlength="${MAX_COMMENT}" oninput="updateCharCount('${n.id}')"></textarea>
+            <div class="char-count" id="ccount-${n.id}">0 / ${MAX_COMMENT}</div>
+            <button class="btn-comment" onclick="submitComment('${n.id}')">Post Comment</button>
           </div>
         </div>
       </div>`;
   }).join('');
 }
 
-// ── Print single note ─────────────────────────
+/* ── TOGGLE COMMENTS ── */
+async function toggleComments(noteId) {
+  const panel  = document.getElementById(`cpanel-${noteId}`);
+  const isOpen = panel.classList.contains('open');
+  document.querySelectorAll('.comments-panel.open').forEach(p => p.classList.remove('open'));
+  if (!isOpen) {
+    panel.classList.add('open');
+    await loadComments(noteId);
+    const nameEl = document.getElementById(`cname-${noteId}`);
+    const bodyEl = document.getElementById(`cbody-${noteId}`);
+    setTimeout(() => (nameEl.value ? bodyEl : nameEl).focus(), 50);
+  }
+}
 
+/* ── LOAD COMMENTS ── */
+async function loadComments(noteId) {
+  const list = document.getElementById(`clist-${noteId}`);
+  if (!list) return;
+  const {data, error} = await sb.from('comments')
+    .select('*').eq('note_id',noteId).order('created_at',{ascending:true});
+  if (error || !data || !data.length) {
+    list.innerHTML = `<div style="font-size:12px;color:#999;text-align:center;padding:8px 0">No comments yet — be the first to reply.</div>`;
+    return;
+  }
+  list.innerHTML = data.map(c => `
+    <div class="comment-item">
+      <div class="comment-meta">
+        <span>${escHtml(c.name)}</span>
+        <span class="ctime">${fmtDateTime(c.created_at)}</span>
+      </div>
+      <div class="comment-text">${escHtml(c.body).replace(/\n/g,'<br>')}</div>
+    </div>`).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+/* ── CHAR COUNT ── */
+function updateCharCount(noteId) {
+  const body    = document.getElementById(`cbody-${noteId}`);
+  const counter = document.getElementById(`ccount-${noteId}`);
+  const len = body.value.length;
+  counter.textContent = `${len} / ${MAX_COMMENT}`;
+  counter.className   = `char-count${len > MAX_COMMENT - 20 ? ' warn' : ''}`;
+}
+
+/* ── SUBMIT COMMENT ── */
+async function submitComment(noteId) {
+  const name = document.getElementById(`cname-${noteId}`).value.trim();
+  const body = document.getElementById(`cbody-${noteId}`).value.trim();
+  if (!name) { toast('Please enter your name','err'); return; }
+  if (!body) { toast('Please write a comment','err'); return; }
+  if (body.length > MAX_COMMENT) { toast(`Max ${MAX_COMMENT} characters`,'err'); return; }
+
+  const {error} = await sb.from('comments').insert([{note_id:noteId, name, body}]);
+  if (error) { toast('Error: '+error.message,'err'); return; }
+
+  document.getElementById(`cbody-${noteId}`).value = '';
+  updateCharCount(noteId);
+  toast('Comment posted','ok');
+  await loadComments(noteId);
+
+  // Update badge without full page reload
+  const {data} = await sb.from('comments').select('created_at').eq('note_id',noteId).order('created_at',{ascending:true});
+  const badge = document.getElementById(`cbadge-${noteId}`);
+  if (badge && data) {
+    const c    = data.length;
+    const last = data[c-1]?.created_at;
+    badge.className = 'comment-badge has-comments';
+    badge.innerHTML = `💬 ${c} comment${c!==1?'s':''}<span class="cb-last">Last: ${fmtDateTime(last)}</span>`;
+  }
+}
+
+/* ── PRINT ── */
 function printNote(btn) {
-  const note = btn.closest('.note');
+  const note    = btn.closest('.note');
   const subject = note.querySelector('.note-subject').innerHTML;
   const author  = note.querySelector('.note-author').innerHTML;
   const body    = note.querySelector('.note-body').innerHTML;
   const expiry  = note.querySelector('.note-expiry').textContent;
-
-  const w = window.open('','_blank','width=620,height=520');
+  const w = window.open('','_blank','width=620,height=560');
   w.document.write(`<!DOCTYPE html><html><head><title>Note — ITU Board</title>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     body{font-family:'IBM Plex Sans',sans-serif;padding:40px 50px;background:#fff;color:#1a1a1a;}
-    h1{font-family:'IBM Plex Sans',sans-serif;font-size:22px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+    h1{font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
     .meta{font-size:12px;color:#999;margin-bottom:18px;}
-    .body{font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.7;white-space:pre-wrap;}
+    .body{font-size:14px;line-height:1.7;white-space:pre-wrap;}
     .foot{margin-top:28px;padding-top:12px;border-top:1px solid #ddd;font-size:11px;color:#bbb;}
     @media print{@page{margin:20mm;}}
   </style></head><body>
-  <h1>${subject}</h1>
-  <div class="meta">${author}</div>
+  <h1>${subject}</h1><div class="meta">${author}</div>
   <div class="body">${body}</div>
-  <div class="foot">${expiry} &nbsp;·&nbsp; ITU Notice Board — QEQM Margate</div>
+  <div class="foot">${expiry} · ITU Notice Board — QEQM Margate · tinyurl.com/qitu-nobo</div>
   </body></html>`);
   w.document.close();
   w.onload = () => { w.focus(); w.print(); };
 }
 
-// ── Toggle archive view ───────────────────────
-
+/* ── ARCHIVE ── */
 function toggleArchive() {
   showArchive = !showArchive;
   document.getElementById('archiveBanner').style.display = showArchive ? 'flex' : 'none';
   document.getElementById('archiveBtn').classList.toggle('active', showArchive);
-  document.getElementById('board').innerHTML =
-    '<div class="board-message"><div class="spinner"></div><p>Loading…</p></div>';
+  document.getElementById('board').innerHTML = '<div class="board-message"><div class="spinner"></div><p>Loading…</p></div>';
   loadNotes();
 }
 
-// ── Admin ─────────────────────────────────────
-
+/* ── ADMIN ── */
 function toggleAdmin() {
   if (isAdmin) {
     isAdmin = false;
     document.getElementById('adminChip').style.display = 'none';
-    toast('Admin mode off', 'ok');
-    loadNotes();
-    return;
+    toast('Admin mode off','ok'); loadNotes(); return;
   }
   const pwd = prompt('Enter admin password:');
   if (pwd === null) return;
   if (pwd === ADMIN_PASSWORD) {
     isAdmin = true;
     document.getElementById('adminChip').style.display = 'inline-block';
-    toast('Admin mode enabled ✔', 'ok');
-    loadNotes();
-  } else {
-    toast('Incorrect password', 'err');
-  }
+    toast('Admin mode enabled ✔','ok'); loadNotes();
+  } else { toast('Incorrect password','err'); }
 }
 
 async function adminDelete(id) {
-  if (!confirm('Permanently delete this note? This cannot be undone.')) return;
-  const { error } = await sb.from('notes').delete().eq('id', id);
-  if (error) { toast('Error: ' + error.message, 'err'); return; }
-  toast('Note deleted', 'ok');
-  loadNotes();
+  if (!confirm('Permanently delete this note and all its comments?')) return;
+  await sb.from('comments').delete().eq('note_id',id);
+  const {error} = await sb.from('notes').delete().eq('id',id);
+  if (error) { toast('Error: '+error.message,'err'); return; }
+  toast('Note deleted','ok'); loadNotes();
 }
 
-// ── Add note ──────────────────────────────────
-
+/* ── ADD NOTE ── */
 function openAdd() {
   document.getElementById('addOverlay').classList.add('open');
   setTimeout(() => document.getElementById('fName').focus(), 50);
@@ -584,37 +558,20 @@ async function submitNote() {
   const subject   = document.getElementById('fSubject').value.trim();
   const body      = document.getElementById('fBody').value.trim();
   const retention = parseInt(document.getElementById('fRetention').value);
-
-  if (!name || !subject || !body) {
-    toast('Please complete all required fields', 'err'); return;
-  }
-
+  if (!name||!subject||!body) { toast('Please complete all required fields','err'); return; }
   const expires = new Date();
   expires.setDate(expires.getDate() + retention);
-
-  const { error } = await sb.from('notes').insert([{
-    name, subject, body,
-    retention_days: retention,
-    expires_at: expires.toISOString(),
-    archived: false,
-    deletion_requested: false,
-    deletion_reason: null
+  const {error} = await sb.from('notes').insert([{
+    name, subject, body, retention_days:retention,
+    expires_at:expires.toISOString(), archived:false, deletion_requested:false, deletion_reason:null
   }]);
-
-  if (error) { toast('Error: ' + error.message, 'err'); return; }
-
-  document.getElementById('fName').value    = '';
-  document.getElementById('fSubject').value = '';
-  document.getElementById('fBody').value    = '';
-  document.getElementById('fRetention').value = '7';
-
-  closeOverlay('addOverlay');
-  toast('Note added', 'ok');
-  loadNotes();
+  if (error) { toast('Error: '+error.message,'err'); return; }
+  ['fName','fSubject','fBody'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('fRetention').value='7';
+  closeOverlay('addOverlay'); toast('Note added','ok'); loadNotes();
 }
 
-// ── Deletion request ──────────────────────────
-
+/* ── DELETION REQUEST ── */
 function openDelRequest(id) {
   pendingDelId = id;
   document.getElementById('fReason').value = '';
@@ -624,44 +581,31 @@ function openDelRequest(id) {
 
 async function submitDelRequest() {
   const reason = document.getElementById('fReason').value.trim();
-  if (!reason) { toast('Please give a reason', 'err'); return; }
-
-  const { error } = await sb.from('notes')
-    .update({ deletion_requested: true, deletion_reason: reason })
-    .eq('id', pendingDelId);
-
-  if (error) { toast('Error: ' + error.message, 'err'); return; }
-  closeOverlay('delOverlay');
-  toast('Deletion request sent to admin', 'ok');
-  loadNotes();
+  if (!reason) { toast('Please give a reason','err'); return; }
+  const {error} = await sb.from('notes').update({deletion_requested:true,deletion_reason:reason}).eq('id',pendingDelId);
+  if (error) { toast('Error: '+error.message,'err'); return; }
+  closeOverlay('delOverlay'); toast('Deletion request sent to admin','ok'); loadNotes();
 }
 
-// ── Overlay helpers ───────────────────────────
-
-function closeOverlay(id) {
-  document.getElementById(id).classList.remove('open');
-  pendingDelId = null;
-}
-
+/* ── OVERLAY HELPERS ── */
+function closeOverlay(id) { document.getElementById(id).classList.remove('open'); pendingDelId=null; }
 document.querySelectorAll('.overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  o.addEventListener('click', e => { if (e.target===o) o.classList.remove('open'); });
 });
 
-// ── Toast ─────────────────────────────────────
-
+/* ── TOAST ── */
 let toastTimer;
-function toast(msg, type = 'ok') {
+function toast(msg, type='ok') {
   const el = document.getElementById('toast');
   clearTimeout(toastTimer);
   el.textContent = msg;
   el.className = `toast ${type} show`;
-  toastTimer = setTimeout(() => el.className = `toast ${type}`, 3200);
+  toastTimer = setTimeout(() => el.className=`toast ${type}`, 3200);
 }
 
-// ── Boot ──────────────────────────────────────
-
+/* ── BOOT ── */
 loadNotes();
-setInterval(loadNotes, 60000); // refresh every minute
+setInterval(loadNotes, 60000);
 </script>
 </body>
 </html>
