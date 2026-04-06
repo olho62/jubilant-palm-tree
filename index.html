@@ -177,6 +177,36 @@
     .note-btn.del-req:hover { background:rgba(198,40,40,.25); }
     .note-btn.sticky-req { background:rgba(184,134,11,.12); color:var(--gold); }
     .note-btn.sticky-req:hover { background:rgba(184,134,11,.25); }
+    .note-btn.edit-btn {
+      background:rgba(26,58,92,.1); color:#1a3a5c;
+      font-size:11px; font-weight:600; width:auto; padding:0 8px; letter-spacing:.2px;
+    }
+    .note-btn.edit-btn:hover { background:rgba(26,58,92,.2); }
+
+    .edited-badge {
+      display:inline-block; font-size:9px; font-weight:700; letter-spacing:.4px;
+      background:rgba(26,58,92,.08); color:#1a3a5c;
+      padding:2px 7px; border-radius:10px; margin-top:4px;
+    }
+
+    /* Inline comment edit */
+    .comment-edit-area {
+      width:100%; padding:6px 8px; margin-top:6px;
+      border:1.5px solid var(--navy); border-radius:5px;
+      font-family:'IBM Plex Sans',sans-serif; font-size:13px; color:#1a1a1a;
+      background:#fff; resize:none; height:58px; outline:none;
+    }
+    .comment-edit-actions { display:flex; gap:6px; justify-content:flex-end; margin-top:5px; }
+    .btn-save-comment {
+      padding:4px 12px; border:none; border-radius:5px;
+      background:var(--navy); color:#fff;
+      font-family:'IBM Plex Sans',sans-serif; font-size:12px; font-weight:600; cursor:pointer;
+    }
+    .btn-cancel-comment {
+      padding:4px 12px; border:1.5px solid #ddd; border-radius:5px;
+      background:none; color:#888;
+      font-family:'IBM Plex Sans',sans-serif; font-size:12px; cursor:pointer;
+    }
 
     /* COMMENT BADGE */
     .comment-badge {
@@ -377,6 +407,20 @@
   </div>
 </div>
 
+<!-- EDIT NOTE MODAL -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <h2>Edit Note</h2>
+    <p class="hint">You have 15 minutes from posting to make changes. An "Edited" marker will appear on the note.</p>
+    <div class="fg"><label>Subject *</label><input id="eSubject" type="text" maxlength="100"></div>
+    <div class="fg"><label>Message *</label><textarea id="eBody"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeOverlay('editOverlay')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEditNote()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -385,6 +429,7 @@ const SUPABASE_URL      = 'https://oyvfhuielzejcyqyxtld.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__H3OrPNgHWsgoU2KLSc2Cg_jTRe947E';
 const ADMIN_PASSWORD    = '4dminP4ss26!';
 const MAX_COMMENT       = 180;
+const EDIT_WINDOW_MS    = 15 * 60 * 1000; // 15 minutes
 
 if (SUPABASE_URL.includes('YOUR_')) document.getElementById('setupWarn').style.display = 'block';
 
@@ -394,6 +439,7 @@ let isAdmin        = false;
 let showArchive    = false;
 let pendingDelId   = null;
 let pendingStickyId = null;
+let pendingEditId   = null;
 let savedName      = localStorage.getItem('itu_commenter_name') || '';
 
 /* ── HELPERS ── */
@@ -430,6 +476,14 @@ function buildNoteCard(n, countMap, lastMap) {
   const stickyBadge     = n.sticky ? `<div class="sticky-badge">★ Permanent</div>` : '';
   const stickyReqBadge  = n.sticky_requested && !n.sticky ? `<div class="sticky-req-badge">★ Sticky requested</div>` : '';
   const delBadge        = n.deletion_requested ? `<div class="del-badge">🗑 Deletion requested</div>` : '';
+  const editedBadge     = n.edited ? `<div class="edited-badge">✎ Edited</div>` : '';
+
+  // Edit button — visible within 15 min window
+  const ageMs    = Date.now() - new Date(n.created_at).getTime();
+  const minsLeft = Math.ceil((EDIT_WINDOW_MS - ageMs) / 60000);
+  const editBtn  = (ageMs < EDIT_WINDOW_MS)
+    ? `<button class="note-btn edit-btn" id="editbtn-${n.id}" title="Edit this note"
+         onclick="event.stopPropagation();openEditNote('${n.id}')">✎ ${minsLeft}m</button>` : '';
 
   // Staff buttons
   const stickyReqBtn = (!n.sticky && !n.sticky_requested && !isAdmin)
@@ -461,7 +515,7 @@ function buildNoteCard(n, countMap, lastMap) {
         <div class="note-footer">
           <div>
             <div class="note-expiry${soon?' warn':''}">${expiryText}</div>
-            ${stickyBadge}${stickyReqBadge}${delBadge}
+            ${stickyBadge}${stickyReqBadge}${delBadge}${editedBadge}
           </div>
           <div class="note-actions">
             <span class="comment-badge ${hasC?'has-comments':''}" id="cbadge-${n.id}"
@@ -469,6 +523,7 @@ function buildNoteCard(n, countMap, lastMap) {
               ${badgeLabel}${badgeLast}
             </span>
             <button class="note-btn" title="Print this note" onclick="event.stopPropagation();printNote(this)">🖨️</button>
+            ${editBtn}
             ${stickyReqBtn}${delBtn}
             ${adminStickyBtn}${adminUnStickyBtn}${adminDelBtn}
           </div>
@@ -603,14 +658,26 @@ async function loadComments(noteId) {
     list.innerHTML=`<div style="font-size:12px;color:#999;text-align:center;padding:8px 0">No comments yet — be the first to reply.</div>`;
     return;
   }
-  list.innerHTML = data.map(c=>`
-    <div class="comment-item">
-      <div class="comment-meta">
-        <span>${escHtml(c.name)}</span>
-        <span class="ctime">${fmtDateTime(c.created_at)}</span>
-      </div>
-      <div class="comment-text">${linkify(escHtml(c.body).replace(/\n/g,'<br>'))}</div>
-    </div>`).join('');
+  const n_id = noteId;
+  list.innerHTML = data.map(c => {
+    const cAgeMs    = Date.now() - new Date(c.created_at).getTime();
+    const cMinsLeft = Math.ceil((EDIT_WINDOW_MS - cAgeMs) / 60000);
+    const cEditBtn  = (cAgeMs < EDIT_WINDOW_MS)
+      ? `<button class="note-btn edit-btn" id="ceditbtn-${c.id}" style="width:auto;padding:0 6px;font-size:10px"
+           onclick="openEditComment('${c.id}','${n_id}')">✎ ${cMinsLeft}m</button>` : '';
+    const cEdited   = c.edited ? `<span style="font-size:9px;color:rgba(0,0,0,.35);font-weight:400;margin-left:4px">✎ edited</span>` : '';
+    return `
+      <div class="comment-item" id="citem-${c.id}">
+        <div class="comment-meta">
+          <span>${escHtml(c.name)}${cEdited}</span>
+          <div style="display:flex;align-items:center;gap:5px">
+            ${cEditBtn}
+            <span class="ctime">${fmtDateTime(c.created_at)}</span>
+          </div>
+        </div>
+        <div class="comment-text" id="ctext-${c.id}">${linkify(escHtml(c.body).replace(/\n/g,'<br>'))}</div>
+      </div>`;
+  }).join('');
   list.scrollTop = list.scrollHeight;
 }
 
@@ -773,8 +840,87 @@ async function submitStickyRequest() {
   closeOverlay('stickyOverlay'); toast('Sticky request sent to admin','ok'); loadNotes();
 }
 
+/* ── EDIT NOTE ── */
+function openEditNote(id) {
+  pendingEditId = id;
+  const wrap    = document.getElementById(`wrap-${id}`);
+  const subject = wrap.querySelector('.note-subject').childNodes[0].nodeValue.trim();
+  const bodyEl  = wrap.querySelector('.note-body');
+  // Get plain text from body (strip HTML)
+  const bodyText = bodyEl.innerText || bodyEl.textContent;
+  document.getElementById('eSubject').value = subject;
+  document.getElementById('eBody').value    = bodyText;
+  document.getElementById('editOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('eSubject').focus(),50);
+}
+
+async function submitEditNote() {
+  const subject = document.getElementById('eSubject').value.trim();
+  const body    = document.getElementById('eBody').value.trim();
+  if (!subject||!body){toast('Please complete all fields','err');return;}
+  const {error} = await sb.from('notes')
+    .update({subject, body, edited:true, edited_at:new Date().toISOString()})
+    .eq('id', pendingEditId);
+  if (error){toast('Error: '+error.message,'err');return;}
+  closeOverlay('editOverlay');
+  toast('Note updated','ok');
+  loadNotes();
+}
+
+/* ── EDIT COMMENT ── */
+function openEditComment(commentId, noteId) {
+  const textEl = document.getElementById(`ctext-${commentId}`);
+  if (!textEl) return;
+  const currentText = textEl.innerText || textEl.textContent;
+  textEl.innerHTML = `
+    <textarea class="comment-edit-area" id="cedit-${commentId}" maxlength="${MAX_COMMENT}">${escHtml(currentText)}</textarea>
+    <div class="comment-edit-actions">
+      <button class="btn-cancel-comment" onclick="cancelEditComment('${commentId}','${noteId}')">Cancel</button>
+      <button class="btn-save-comment" onclick="submitEditComment('${commentId}','${noteId}')">Save</button>
+    </div>`;
+  const ta = document.getElementById(`cedit-${commentId}`);
+  ta.focus(); ta.selectionStart = ta.value.length;
+}
+
+async function submitEditComment(commentId, noteId) {
+  const ta   = document.getElementById(`cedit-${commentId}`);
+  const body = ta ? ta.value.trim() : '';
+  if (!body){toast('Comment cannot be empty','err');return;}
+  if (body.length>MAX_COMMENT){toast(`Max ${MAX_COMMENT} characters`,'err');return;}
+  const {error} = await sb.from('comments')
+    .update({body, edited:true, edited_at:new Date().toISOString()})
+    .eq('id', commentId);
+  if (error){toast('Error: '+error.message,'err');return;}
+  toast('Comment updated','ok');
+  loadComments(noteId);
+}
+
+async function cancelEditComment(commentId, noteId) {
+  loadComments(noteId);
+}
+
+/* ── COUNTDOWN TICKER ── */
+setInterval(() => {
+  document.querySelectorAll('[id^="editbtn-"]').forEach(btn => {
+    const noteId = btn.id.replace('editbtn-','');
+    const wrap   = document.getElementById(`wrap-${noteId}`);
+    if (!wrap) return;
+    const created = wrap.querySelector('.note-author')?.dataset?.created;
+    // Use data attr — fall through to remove if expired
+    const ageMs   = btn.dataset.created ? Date.now()-new Date(btn.dataset.created).getTime() : EDIT_WINDOW_MS;
+    const mins    = Math.ceil((EDIT_WINDOW_MS - ageMs) / 60000);
+    if (mins <= 0) { btn.remove(); } else { btn.textContent = `✎ ${mins}m`; }
+  });
+  document.querySelectorAll('[id^="ceditbtn-"]').forEach(btn => {
+    const parts  = btn.id.replace('ceditbtn-','');
+    const ageMs  = btn.dataset.created ? Date.now()-new Date(btn.dataset.created).getTime() : EDIT_WINDOW_MS;
+    const mins   = Math.ceil((EDIT_WINDOW_MS - ageMs) / 60000);
+    if (mins <= 0) { btn.remove(); } else { btn.textContent = `✎ ${mins}m`; }
+  });
+}, 30000); // tick every 30 seconds
+
 /* ── OVERLAY HELPERS ── */
-function closeOverlay(id){document.getElementById(id).classList.remove('open');pendingDelId=null;pendingStickyId=null;}
+function closeOverlay(id){document.getElementById(id).classList.remove('open');pendingDelId=null;pendingStickyId=null;pendingEditId=null;}
 document.querySelectorAll('.overlay').forEach(o=>{
   o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
 });
