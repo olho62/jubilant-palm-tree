@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root { --navy:#1a3a5c; --red:#d32f2f; --red-dark:#b71c1c; }
+    :root { --navy:#1a3a5c; --red:#d32f2f; --red-dark:#b71c1c; --gold:#b8860b; }
     * { box-sizing:border-box; margin:0; padding:0; }
     body { font-family:'IBM Plex Sans',sans-serif; min-height:100vh; background:#ddeeff; }
 
@@ -67,6 +67,26 @@
       padding:12px 28px; font-size:13px; text-align:center; display:none;
     }
 
+    /* STICKY SECTION DIVIDER */
+    .sticky-divider {
+      grid-column:1/-1;
+      display:flex; align-items:center; gap:12px;
+      font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase;
+      color:rgba(184,134,11,.8);
+    }
+    .sticky-divider::after {
+      content:''; flex:1; height:1px; background:rgba(184,134,11,.3);
+    }
+    .regular-divider {
+      grid-column:1/-1;
+      display:flex; align-items:center; gap:12px;
+      font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase;
+      color:rgba(26,58,92,.5);
+    }
+    .regular-divider::after {
+      content:''; flex:1; height:1px; background:rgba(26,58,92,.2);
+    }
+
     /* BOARD */
     .board {
       padding:32px 28px;
@@ -81,17 +101,30 @@
       transition:box-shadow .2s;
     }
     .note-wrap:hover { box-shadow:0 6px 20px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.07); }
+    .note-wrap.is-sticky {
+      box-shadow:0 2px 8px rgba(0,0,0,.12), 0 0 0 2px var(--gold);
+    }
+    .note-wrap.is-sticky:hover {
+      box-shadow:0 6px 20px rgba(0,0,0,.16), 0 0 0 2px var(--gold);
+    }
 
     /* NOTE */
     .note {
       padding:18px 18px 14px; display:flex; flex-direction:column;
-      min-height:190px; cursor:pointer; user-select:none;
+      min-height:190px; cursor:pointer; user-select:none; position:relative;
     }
     .note-2day  { background:#f8bbd0; }
     .note-4day  { background:#ffe0b2; }
     .note-1week { background:#fff9c4; }
     .note-2week { background:#c8e6c9; }
     .note-1month{ background:#bbdefb; }
+
+    /* Sticky stripe at top of card */
+    .sticky-stripe {
+      position:absolute; top:0; left:0; right:0; height:4px;
+      background:linear-gradient(90deg, var(--gold), #daa520);
+    }
+
     .note-top { padding-bottom:9px; border-bottom:1px solid rgba(0,0,0,.1); margin-bottom:9px; }
     .note-subject { font-size:14px; font-weight:700; color:#1a1a1a; line-height:1.3; text-transform:uppercase; letter-spacing:.4px; }
     .note-author  { font-size:11px; color:rgba(0,0,0,.5); margin-top:4px; }
@@ -99,11 +132,23 @@
     .note-footer  { margin-top:12px; padding-top:9px; border-top:1px solid rgba(0,0,0,.1); display:flex; justify-content:space-between; align-items:flex-end; }
     .note-expiry  { font-size:10px; color:rgba(0,0,0,.45); line-height:1.4; }
     .note-expiry.warn { color:#c62828; font-weight:600; }
+
+    .sticky-badge {
+      display:inline-block; font-size:9px; font-weight:700; letter-spacing:.4px;
+      background:rgba(184,134,11,.15); color:var(--gold);
+      padding:2px 7px; border-radius:10px; margin-top:4px;
+    }
+    .sticky-req-badge {
+      display:inline-block; font-size:9px; font-weight:700; letter-spacing:.4px;
+      background:rgba(184,134,11,.1); color:#8a6500;
+      padding:2px 7px; border-radius:10px; margin-top:4px;
+    }
     .del-badge {
       display:inline-block; font-size:9px; font-weight:700; letter-spacing:.4px;
       background:rgba(198,40,40,.12); color:#c62828; padding:2px 7px; border-radius:10px; margin-top:4px;
     }
-    .note-actions { display:flex; gap:5px; align-items:center; }
+
+    .note-actions { display:flex; gap:5px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
     .note-btn {
       width:28px; height:28px; border:none; border-radius:5px;
       background:rgba(0,0,0,.1); color:rgba(0,0,0,.55);
@@ -113,6 +158,8 @@
     .note-btn:hover { background:rgba(0,0,0,.22); color:rgba(0,0,0,.9); }
     .note-btn.del-req { background:rgba(198,40,40,.12); color:#c62828; }
     .note-btn.del-req:hover { background:rgba(198,40,40,.25); }
+    .note-btn.sticky-req { background:rgba(184,134,11,.12); color:var(--gold); }
+    .note-btn.sticky-req:hover { background:rgba(184,134,11,.25); }
 
     /* COMMENT BADGE */
     .comment-badge {
@@ -300,6 +347,19 @@
   </div>
 </div>
 
+<!-- REQUEST STICKY MODAL -->
+<div class="overlay" id="stickyOverlay">
+  <div class="modal">
+    <h2>Request Sticky Note</h2>
+    <p class="hint">Ask the board admin to make this note permanent so it never expires. Please give a brief reason why it should stay on the board indefinitely.</p>
+    <div class="fg"><label>Reason *</label><textarea id="fStickyReason" placeholder="Why should this note be made permanent?" style="min-height:90px"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeOverlay('stickyOverlay')">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--gold)" onclick="submitStickyRequest()">Send Request</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -313,121 +373,177 @@ if (SUPABASE_URL.includes('YOUR_')) document.getElementById('setupWarn').style.d
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let isAdmin      = false;
-let showArchive  = false;
-let pendingDelId = null;
-let savedName    = localStorage.getItem('itu_commenter_name') || '';
+let isAdmin        = false;
+let showArchive    = false;
+let pendingDelId   = null;
+let pendingStickyId = null;
+let savedName      = localStorage.getItem('itu_commenter_name') || '';
 
 /* ── HELPERS ── */
-const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const fmtDate = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-const fmtTime = d => new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-const fmtDateTime = d => `${fmtDate(d)} ${fmtTime(d)}`;
-const daysLeft = exp => Math.ceil((new Date(exp) - new Date()) / 86400000);
+const escHtml    = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtDate    = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+const fmtTime    = d => new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+const fmtDateTime= d => `${fmtDate(d)} ${fmtTime(d)}`;
+const daysLeft   = exp => Math.ceil((new Date(exp) - new Date()) / 86400000);
 const retentionClass = {2:'note-2day',4:'note-4day',7:'note-1week',14:'note-2week',30:'note-1month'};
+
+/* ── BUILD NOTE CARD HTML ── */
+function buildNoteCard(n, countMap, lastMap) {
+  const cls    = retentionClass[n.retention_days] || 'note-1week';
+  const days   = daysLeft(n.expires_at);
+  const soon   = !showArchive && !n.sticky && days <= 2;
+  const cCount = countMap[n.id] || 0;
+  const hasC   = cCount > 0;
+
+  const expiryText = n.sticky
+    ? 'Permanent note'
+    : showArchive
+    ? `Archived · was due ${fmtDate(n.expires_at)}`
+    : days <= 0  ? '⚠️ Expires today!'
+    : days === 1 ? '⚠️ Expires tomorrow'
+    : `Expires ${fmtDate(n.expires_at)}`;
+
+  const stickyStripe    = n.sticky ? `<div class="sticky-stripe"></div>` : '';
+  const stickyBadge     = n.sticky ? `<div class="sticky-badge">★ Permanent</div>` : '';
+  const stickyReqBadge  = n.sticky_requested && !n.sticky ? `<div class="sticky-req-badge">★ Sticky requested</div>` : '';
+  const delBadge        = n.deletion_requested ? `<div class="del-badge">🗑 Deletion requested</div>` : '';
+
+  // Staff buttons
+  const stickyReqBtn = (!n.sticky && !n.sticky_requested && !isAdmin)
+    ? `<button class="note-btn sticky-req" title="Request permanent note" onclick="event.stopPropagation();openStickyRequest('${n.id}')">★</button>` : '';
+  const delBtn = (!n.deletion_requested && !isAdmin)
+    ? `<button class="note-btn del-req" title="Request deletion" onclick="event.stopPropagation();openDelRequest('${n.id}')">✕</button>` : '';
+
+  // Admin buttons
+  const adminStickyBtn = isAdmin && !n.sticky
+    ? `<button class="note-btn sticky-req" title="Make permanent" onclick="event.stopPropagation();adminMakeSticky('${n.id}')">★</button>` : '';
+  const adminUnStickyBtn = isAdmin && n.sticky
+    ? `<button class="note-btn sticky-req" title="Remove permanent status" onclick="event.stopPropagation();adminUnsticky('${n.id}')">☆</button>` : '';
+  const adminDelBtn = isAdmin
+    ? `<button class="note-btn del-req" title="Delete note" onclick="event.stopPropagation();adminDelete('${n.id}')">🗑️</button>` : '';
+
+  const badgeLabel = hasC ? `💬 ${cCount} comment${cCount>1?'s':''}` : `💬 Comment`;
+  const badgeLast  = hasC ? `<span class="cb-last">Last: ${fmtDateTime(lastMap[n.id])}</span>` : '';
+
+  return `
+    <div class="note-wrap${n.sticky?' is-sticky':''}" id="wrap-${n.id}">
+      <div class="note ${cls}" onclick="toggleComments('${n.id}')">
+        ${stickyStripe}
+        <div class="note-top">
+          <div class="note-subject">${escHtml(n.subject)}</div>
+          <div class="note-author">${escHtml(n.name)} · ${fmtDate(n.created_at)}</div>
+        </div>
+        <div class="note-body">${escHtml(n.body).replace(/\n/g,'<br>')}</div>
+        <div class="note-footer">
+          <div>
+            <div class="note-expiry${soon?' warn':''}">${expiryText}</div>
+            ${stickyBadge}${stickyReqBadge}${delBadge}
+          </div>
+          <div class="note-actions">
+            <span class="comment-badge ${hasC?'has-comments':''}" id="cbadge-${n.id}">
+              ${badgeLabel}${badgeLast}
+            </span>
+            <button class="note-btn" title="Print this note" onclick="event.stopPropagation();printNote(this)">🖨️</button>
+            ${stickyReqBtn}${delBtn}
+            ${adminStickyBtn}${adminUnStickyBtn}${adminDelBtn}
+          </div>
+        </div>
+      </div>
+      <div class="comments-panel" id="cpanel-${n.id}">
+        <div class="comments-list" id="clist-${n.id}">
+          <div style="font-size:12px;color:#999;text-align:center;padding:8px">Loading…</div>
+        </div>
+        <div class="comment-form">
+          <input type="text" id="cname-${n.id}" placeholder="Your name *" maxlength="80"
+            value="${escHtml(savedName)}"
+            oninput="savedName=this.value;localStorage.setItem('itu_commenter_name',this.value)">
+          <textarea id="cbody-${n.id}" placeholder="Add a comment… (max 180 characters)"
+            maxlength="${MAX_COMMENT}" oninput="updateCharCount('${n.id}')"></textarea>
+          <div class="char-count" id="ccount-${n.id}">0 / ${MAX_COMMENT}</div>
+          <button class="btn-comment" onclick="submitComment('${n.id}')">Post Comment</button>
+        </div>
+      </div>
+    </div>`;
+}
 
 /* ── LOAD NOTES ── */
 async function loadNotes() {
-  await sb.from('notes').update({archived:true}).eq('archived',false).lt('expires_at',new Date().toISOString());
-
-  const {data:notes, error} = await sb.from('notes')
-    .select('*').eq('archived',showArchive).order('created_at',{ascending:false});
+  // Auto-archive only non-sticky expired notes
+  await sb.from('notes')
+    .update({archived:true})
+    .eq('archived',false)
+    .eq('sticky',false)
+    .lt('expires_at', new Date().toISOString());
 
   const board = document.getElementById('board');
 
-  if (error) {
-    board.innerHTML = `<div class="board-message"><div class="icon">⚠️</div><p>Could not load notes. Check Supabase configuration.</p></div>`;
-    return;
-  }
-  if (!notes || !notes.length) {
-    board.innerHTML = `<div class="board-message"><div class="icon">${showArchive?'📦':'📋'}</div><p>${showArchive?'No archived notes yet.':'No notes added yet — be the first!'}</p></div>`;
+  if (showArchive) {
+    // Archive view — no sticky notes here
+    const {data:notes, error} = await sb.from('notes')
+      .select('*').eq('archived',true).order('created_at',{ascending:false});
+    if (error) { board.innerHTML=`<div class="board-message"><div class="icon">⚠️</div><p>Could not load notes.</p></div>`; return; }
+    if (!notes||!notes.length) { board.innerHTML=`<div class="board-message"><div class="icon">📦</div><p>No archived notes yet.</p></div>`; return; }
+    const {countMap,lastMap} = await getCommentMaps(notes.map(n=>n.id));
+    board.innerHTML = notes.map(n => buildNoteCard(n,countMap,lastMap)).join('');
     return;
   }
 
-  const noteIds = notes.map(n => n.id);
-  const {data:commentRows} = await sb.from('comments')
-    .select('note_id, created_at').in('note_id', noteIds).order('created_at',{ascending:true});
+  // Main board — fetch sticky + regular separately
+  const [{data:stickyNotes},{data:regularNotes}] = await Promise.all([
+    sb.from('notes').select('*').eq('sticky',true).order('created_at',{ascending:false}),
+    sb.from('notes').select('*').eq('archived',false).eq('sticky',false).order('created_at',{ascending:false})
+  ]);
 
-  const countMap = {};
-  const lastMap  = {};
-  (commentRows||[]).forEach(r => {
-    countMap[r.note_id] = (countMap[r.note_id]||0) + 1;
+  const allNotes = [...(stickyNotes||[]), ...(regularNotes||[])];
+
+  if (!allNotes.length) {
+    board.innerHTML=`<div class="board-message"><div class="icon">📋</div><p>No notes added yet — be the first!</p></div>`;
+    return;
+  }
+
+  const {countMap,lastMap} = await getCommentMaps(allNotes.map(n=>n.id));
+
+  let html = '';
+
+  if (stickyNotes && stickyNotes.length) {
+    html += `<div class="sticky-divider">★ Permanent Notes</div>`;
+    html += stickyNotes.map(n => buildNoteCard(n,countMap,lastMap)).join('');
+  }
+
+  if (regularNotes && regularNotes.length) {
+    if (stickyNotes && stickyNotes.length) {
+      html += `<div class="regular-divider">Board Notes</div>`;
+    }
+    html += regularNotes.map(n => buildNoteCard(n,countMap,lastMap)).join('');
+  }
+
+  board.innerHTML = html;
+}
+
+/* ── COMMENT MAPS ── */
+async function getCommentMaps(noteIds) {
+  if (!noteIds.length) return {countMap:{},lastMap:{}};
+  const {data:rows} = await sb.from('comments')
+    .select('note_id,created_at').in('note_id',noteIds).order('created_at',{ascending:true});
+  const countMap={}, lastMap={};
+  (rows||[]).forEach(r => {
+    countMap[r.note_id] = (countMap[r.note_id]||0)+1;
     lastMap[r.note_id]  = r.created_at;
   });
-
-  board.innerHTML = notes.map(n => {
-    const cls   = retentionClass[n.retention_days] || 'note-1week';
-    const days  = daysLeft(n.expires_at);
-    const soon  = !showArchive && days <= 2;
-    const cCount = countMap[n.id] || 0;
-    const hasC   = cCount > 0;
-
-    const expiryText = showArchive
-      ? `Archived · was due ${fmtDate(n.expires_at)}`
-      : days <= 0  ? '⚠️ Expires today!'
-      : days === 1 ? '⚠️ Expires tomorrow'
-      : `Expires ${fmtDate(n.expires_at)}`;
-
-    const delBadge   = n.deletion_requested ? `<div class="del-badge">🗑 Deletion requested</div>` : '';
-    const delBtn     = (!n.deletion_requested && !isAdmin)
-      ? `<button class="note-btn del-req" title="Request deletion" onclick="event.stopPropagation();openDelRequest('${n.id}')">✕</button>` : '';
-    const adminDelBtn = isAdmin
-      ? `<button class="note-btn" style="background:rgba(198,40,40,.15);color:#c62828" title="Delete note" onclick="event.stopPropagation();adminDelete('${n.id}')">🗑️</button>` : '';
-
-    const badgeLabel = hasC ? `💬 ${cCount} comment${cCount>1?'s':''}` : `💬 Comment`;
-    const badgeLast  = hasC ? `<span class="cb-last">Last: ${fmtDateTime(lastMap[n.id])}</span>` : '';
-
-    return `
-      <div class="note-wrap" id="wrap-${n.id}">
-        <div class="note ${cls}" onclick="toggleComments('${n.id}')">
-          <div class="note-top">
-            <div class="note-subject">${escHtml(n.subject)}</div>
-            <div class="note-author">${escHtml(n.name)} · ${fmtDate(n.created_at)}</div>
-          </div>
-          <div class="note-body">${escHtml(n.body).replace(/\n/g,'<br>')}</div>
-          <div class="note-footer">
-            <div>
-              <div class="note-expiry${soon?' warn':''}">${expiryText}</div>
-              ${delBadge}
-            </div>
-            <div class="note-actions">
-              <span class="comment-badge ${hasC?'has-comments':''}" id="cbadge-${n.id}">
-                ${badgeLabel}${badgeLast}
-              </span>
-              <button class="note-btn" title="Print this note" onclick="event.stopPropagation();printNote(this)">🖨️</button>
-              ${delBtn}${adminDelBtn}
-            </div>
-          </div>
-        </div>
-        <div class="comments-panel" id="cpanel-${n.id}">
-          <div class="comments-list" id="clist-${n.id}">
-            <div style="font-size:12px;color:#999;text-align:center;padding:8px">Loading…</div>
-          </div>
-          <div class="comment-form">
-            <input type="text" id="cname-${n.id}" placeholder="Your name *" maxlength="80"
-              value="${escHtml(savedName)}"
-              oninput="savedName=this.value;localStorage.setItem('itu_commenter_name',this.value)">
-            <textarea id="cbody-${n.id}" placeholder="Add a comment… (max 180 characters)"
-              maxlength="${MAX_COMMENT}" oninput="updateCharCount('${n.id}')"></textarea>
-            <div class="char-count" id="ccount-${n.id}">0 / ${MAX_COMMENT}</div>
-            <button class="btn-comment" onclick="submitComment('${n.id}')">Post Comment</button>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
+  return {countMap,lastMap};
 }
 
 /* ── TOGGLE COMMENTS ── */
 async function toggleComments(noteId) {
   const panel  = document.getElementById(`cpanel-${noteId}`);
   const isOpen = panel.classList.contains('open');
-  document.querySelectorAll('.comments-panel.open').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.comments-panel.open').forEach(p=>p.classList.remove('open'));
   if (!isOpen) {
     panel.classList.add('open');
     await loadComments(noteId);
     const nameEl = document.getElementById(`cname-${noteId}`);
     const bodyEl = document.getElementById(`cbody-${noteId}`);
-    setTimeout(() => (nameEl.value ? bodyEl : nameEl).focus(), 50);
+    setTimeout(()=>(nameEl.value?bodyEl:nameEl).focus(),50);
   }
 }
 
@@ -435,13 +551,13 @@ async function toggleComments(noteId) {
 async function loadComments(noteId) {
   const list = document.getElementById(`clist-${noteId}`);
   if (!list) return;
-  const {data, error} = await sb.from('comments')
+  const {data,error} = await sb.from('comments')
     .select('*').eq('note_id',noteId).order('created_at',{ascending:true});
-  if (error || !data || !data.length) {
-    list.innerHTML = `<div style="font-size:12px;color:#999;text-align:center;padding:8px 0">No comments yet — be the first to reply.</div>`;
+  if (error||!data||!data.length) {
+    list.innerHTML=`<div style="font-size:12px;color:#999;text-align:center;padding:8px 0">No comments yet — be the first to reply.</div>`;
     return;
   }
-  list.innerHTML = data.map(c => `
+  list.innerHTML = data.map(c=>`
     <div class="comment-item">
       <div class="comment-meta">
         <span>${escHtml(c.name)}</span>
@@ -454,48 +570,43 @@ async function loadComments(noteId) {
 
 /* ── CHAR COUNT ── */
 function updateCharCount(noteId) {
-  const body    = document.getElementById(`cbody-${noteId}`);
-  const counter = document.getElementById(`ccount-${noteId}`);
-  const len = body.value.length;
-  counter.textContent = `${len} / ${MAX_COMMENT}`;
-  counter.className   = `char-count${len > MAX_COMMENT - 20 ? ' warn' : ''}`;
+  const body=document.getElementById(`cbody-${noteId}`);
+  const counter=document.getElementById(`ccount-${noteId}`);
+  const len=body.value.length;
+  counter.textContent=`${len} / ${MAX_COMMENT}`;
+  counter.className=`char-count${len>MAX_COMMENT-20?' warn':''}`;
 }
 
 /* ── SUBMIT COMMENT ── */
 async function submitComment(noteId) {
-  const name = document.getElementById(`cname-${noteId}`).value.trim();
-  const body = document.getElementById(`cbody-${noteId}`).value.trim();
-  if (!name) { toast('Please enter your name','err'); return; }
-  if (!body) { toast('Please write a comment','err'); return; }
-  if (body.length > MAX_COMMENT) { toast(`Max ${MAX_COMMENT} characters`,'err'); return; }
-
-  const {error} = await sb.from('comments').insert([{note_id:noteId, name, body}]);
-  if (error) { toast('Error: '+error.message,'err'); return; }
-
-  document.getElementById(`cbody-${noteId}`).value = '';
+  const name=document.getElementById(`cname-${noteId}`).value.trim();
+  const body=document.getElementById(`cbody-${noteId}`).value.trim();
+  if (!name){toast('Please enter your name','err');return;}
+  if (!body){toast('Please write a comment','err');return;}
+  if (body.length>MAX_COMMENT){toast(`Max ${MAX_COMMENT} characters`,'err');return;}
+  const {error}=await sb.from('comments').insert([{note_id:noteId,name,body}]);
+  if (error){toast('Error: '+error.message,'err');return;}
+  document.getElementById(`cbody-${noteId}`).value='';
   updateCharCount(noteId);
   toast('Comment posted','ok');
   await loadComments(noteId);
-
-  // Update badge without full page reload
-  const {data} = await sb.from('comments').select('created_at').eq('note_id',noteId).order('created_at',{ascending:true});
-  const badge = document.getElementById(`cbadge-${noteId}`);
-  if (badge && data) {
-    const c    = data.length;
-    const last = data[c-1]?.created_at;
-    badge.className = 'comment-badge has-comments';
-    badge.innerHTML = `💬 ${c} comment${c!==1?'s':''}<span class="cb-last">Last: ${fmtDateTime(last)}</span>`;
+  const {data}=await sb.from('comments').select('created_at').eq('note_id',noteId).order('created_at',{ascending:true});
+  const badge=document.getElementById(`cbadge-${noteId}`);
+  if (badge&&data){
+    const c=data.length; const last=data[c-1]?.created_at;
+    badge.className='comment-badge has-comments';
+    badge.innerHTML=`💬 ${c} comment${c!==1?'s':''}<span class="cb-last">Last: ${fmtDateTime(last)}</span>`;
   }
 }
 
 /* ── PRINT ── */
 function printNote(btn) {
-  const note    = btn.closest('.note');
-  const subject = note.querySelector('.note-subject').innerHTML;
-  const author  = note.querySelector('.note-author').innerHTML;
-  const body    = note.querySelector('.note-body').innerHTML;
-  const expiry  = note.querySelector('.note-expiry').textContent;
-  const w = window.open('','_blank','width=620,height=560');
+  const note=btn.closest('.note');
+  const subject=note.querySelector('.note-subject').innerHTML;
+  const author=note.querySelector('.note-author').innerHTML;
+  const body=note.querySelector('.note-body').innerHTML;
+  const expiry=note.querySelector('.note-expiry').textContent;
+  const w=window.open('','_blank','width=620,height=560');
   w.document.write(`<!DOCTYPE html><html><head><title>Note — ITU Board</title>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
@@ -511,30 +622,28 @@ function printNote(btn) {
   <div class="foot">${expiry} · ITU Notice Board — QEQM Margate · tinyurl.com/qitu-nobo</div>
   </body></html>`);
   w.document.close();
-  w.onload = () => { w.focus(); w.print(); };
+  w.onload=()=>{w.focus();w.print();};
 }
 
 /* ── ARCHIVE ── */
 function toggleArchive() {
-  showArchive = !showArchive;
-  document.getElementById('archiveBanner').style.display = showArchive ? 'flex' : 'none';
-  document.getElementById('archiveBtn').classList.toggle('active', showArchive);
-  document.getElementById('board').innerHTML = '<div class="board-message"><div class="spinner"></div><p>Loading…</p></div>';
+  showArchive=!showArchive;
+  document.getElementById('archiveBanner').style.display=showArchive?'flex':'none';
+  document.getElementById('archiveBtn').classList.toggle('active',showArchive);
+  document.getElementById('board').innerHTML='<div class="board-message"><div class="spinner"></div><p>Loading…</p></div>';
   loadNotes();
 }
 
 /* ── ADMIN ── */
 function toggleAdmin() {
-  if (isAdmin) {
-    isAdmin = false;
-    document.getElementById('adminChip').style.display = 'none';
+  if (isAdmin){
+    isAdmin=false; document.getElementById('adminChip').style.display='none';
     toast('Admin mode off','ok'); loadNotes(); return;
   }
-  const pwd = prompt('Enter admin password:');
-  if (pwd === null) return;
-  if (pwd === ADMIN_PASSWORD) {
-    isAdmin = true;
-    document.getElementById('adminChip').style.display = 'inline-block';
+  const pwd=prompt('Enter admin password:');
+  if (pwd===null) return;
+  if (pwd===ADMIN_PASSWORD){
+    isAdmin=true; document.getElementById('adminChip').style.display='inline-block';
     toast('Admin mode enabled ✔','ok'); loadNotes();
   } else { toast('Incorrect password','err'); }
 }
@@ -542,70 +651,100 @@ function toggleAdmin() {
 async function adminDelete(id) {
   if (!confirm('Permanently delete this note and all its comments?')) return;
   await sb.from('comments').delete().eq('note_id',id);
-  const {error} = await sb.from('notes').delete().eq('id',id);
-  if (error) { toast('Error: '+error.message,'err'); return; }
+  const {error}=await sb.from('notes').delete().eq('id',id);
+  if (error){toast('Error: '+error.message,'err');return;}
   toast('Note deleted','ok'); loadNotes();
+}
+
+async function adminMakeSticky(id) {
+  const {error}=await sb.from('notes').update({sticky:true,sticky_requested:false}).eq('id',id);
+  if (error){toast('Error: '+error.message,'err');return;}
+  toast('Note is now permanent ★','ok'); loadNotes();
+}
+
+async function adminUnsticky(id) {
+  if (!confirm('Remove permanent status from this note? It will expire normally.')) return;
+  const {error}=await sb.from('notes').update({sticky:false}).eq('id',id);
+  if (error){toast('Error: '+error.message,'err');return;}
+  toast('Permanent status removed','ok'); loadNotes();
 }
 
 /* ── ADD NOTE ── */
 function openAdd() {
   document.getElementById('addOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('fName').focus(), 50);
+  setTimeout(()=>document.getElementById('fName').focus(),50);
 }
 
 async function submitNote() {
-  const name      = document.getElementById('fName').value.trim();
-  const subject   = document.getElementById('fSubject').value.trim();
-  const body      = document.getElementById('fBody').value.trim();
-  const retention = parseInt(document.getElementById('fRetention').value);
-  if (!name||!subject||!body) { toast('Please complete all required fields','err'); return; }
-  const expires = new Date();
-  expires.setDate(expires.getDate() + retention);
-  const {error} = await sb.from('notes').insert([{
-    name, subject, body, retention_days:retention,
-    expires_at:expires.toISOString(), archived:false, deletion_requested:false, deletion_reason:null
+  const name=document.getElementById('fName').value.trim();
+  const subject=document.getElementById('fSubject').value.trim();
+  const body=document.getElementById('fBody').value.trim();
+  const retention=parseInt(document.getElementById('fRetention').value);
+  if (!name||!subject||!body){toast('Please complete all required fields','err');return;}
+  const expires=new Date();
+  expires.setDate(expires.getDate()+retention);
+  const {error}=await sb.from('notes').insert([{
+    name,subject,body,retention_days:retention,
+    expires_at:expires.toISOString(),
+    archived:false,sticky:false,sticky_requested:false,sticky_reason:null,
+    deletion_requested:false,deletion_reason:null
   }]);
-  if (error) { toast('Error: '+error.message,'err'); return; }
-  ['fName','fSubject','fBody'].forEach(id => document.getElementById(id).value='');
+  if (error){toast('Error: '+error.message,'err');return;}
+  ['fName','fSubject','fBody'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fRetention').value='7';
   closeOverlay('addOverlay'); toast('Note added','ok'); loadNotes();
 }
 
 /* ── DELETION REQUEST ── */
 function openDelRequest(id) {
-  pendingDelId = id;
-  document.getElementById('fReason').value = '';
+  pendingDelId=id;
+  document.getElementById('fReason').value='';
   document.getElementById('delOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('fReason').focus(), 50);
+  setTimeout(()=>document.getElementById('fReason').focus(),50);
 }
 
 async function submitDelRequest() {
-  const reason = document.getElementById('fReason').value.trim();
-  if (!reason) { toast('Please give a reason','err'); return; }
-  const {error} = await sb.from('notes').update({deletion_requested:true,deletion_reason:reason}).eq('id',pendingDelId);
-  if (error) { toast('Error: '+error.message,'err'); return; }
+  const reason=document.getElementById('fReason').value.trim();
+  if (!reason){toast('Please give a reason','err');return;}
+  const {error}=await sb.from('notes').update({deletion_requested:true,deletion_reason:reason}).eq('id',pendingDelId);
+  if (error){toast('Error: '+error.message,'err');return;}
   closeOverlay('delOverlay'); toast('Deletion request sent to admin','ok'); loadNotes();
 }
 
+/* ── STICKY REQUEST ── */
+function openStickyRequest(id) {
+  pendingStickyId=id;
+  document.getElementById('fStickyReason').value='';
+  document.getElementById('stickyOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('fStickyReason').focus(),50);
+}
+
+async function submitStickyRequest() {
+  const reason=document.getElementById('fStickyReason').value.trim();
+  if (!reason){toast('Please give a reason','err');return;}
+  const {error}=await sb.from('notes').update({sticky_requested:true,sticky_reason:reason}).eq('id',pendingStickyId);
+  if (error){toast('Error: '+error.message,'err');return;}
+  closeOverlay('stickyOverlay'); toast('Sticky request sent to admin','ok'); loadNotes();
+}
+
 /* ── OVERLAY HELPERS ── */
-function closeOverlay(id) { document.getElementById(id).classList.remove('open'); pendingDelId=null; }
-document.querySelectorAll('.overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target===o) o.classList.remove('open'); });
+function closeOverlay(id){document.getElementById(id).classList.remove('open');pendingDelId=null;pendingStickyId=null;}
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
 });
 
 /* ── TOAST ── */
 let toastTimer;
-function toast(msg, type='ok') {
-  const el = document.getElementById('toast');
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
   clearTimeout(toastTimer);
-  el.textContent = msg;
-  el.className = `toast ${type} show`;
-  toastTimer = setTimeout(() => el.className=`toast ${type}`, 3200);
+  el.textContent=msg; el.className=`toast ${type} show`;
+  toastTimer=setTimeout(()=>el.className=`toast ${type}`,3200);
 }
 
 /* ── BOOT ── */
 loadNotes();
-setInterval(loadNotes, 60000);
+setInterval(loadNotes,60000);
 </script>
 </body>
 </html>
