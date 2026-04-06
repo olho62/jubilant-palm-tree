@@ -427,7 +427,7 @@
 /* ── CONFIGURATION ── */
 const SUPABASE_URL      = 'https://oyvfhuielzejcyqyxtld.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable__H3OrPNgHWsgoU2KLSc2Cg_jTRe947E';
-const ADMIN_PASSWORD    = '4dminP4ss26!';
+const ADMIN_PASSWORD    = 'QEQM_ITU_2024';
 const MAX_COMMENT       = 180;
 const EDIT_WINDOW_MS    = 15 * 60 * 1000; // 15 minutes
 
@@ -482,7 +482,7 @@ function buildNoteCard(n, countMap, lastMap) {
   const ageMs    = Date.now() - new Date(n.created_at).getTime();
   const minsLeft = Math.ceil((EDIT_WINDOW_MS - ageMs) / 60000);
   const editBtn  = (ageMs < EDIT_WINDOW_MS)
-    ? `<button class="note-btn edit-btn" id="editbtn-${n.id}" title="Edit this note"
+    ? `<button class="note-btn edit-btn" id="editbtn-${n.id}" data-created="${n.created_at}" title="Edit this note"
          onclick="event.stopPropagation();openEditNote('${n.id}')">✎ ${minsLeft}m</button>` : '';
 
   // Staff buttons
@@ -663,7 +663,7 @@ async function loadComments(noteId) {
     const cAgeMs    = Date.now() - new Date(c.created_at).getTime();
     const cMinsLeft = Math.ceil((EDIT_WINDOW_MS - cAgeMs) / 60000);
     const cEditBtn  = (cAgeMs < EDIT_WINDOW_MS)
-      ? `<button class="note-btn edit-btn" id="ceditbtn-${c.id}" style="width:auto;padding:0 6px;font-size:10px"
+      ? `<button class="note-btn edit-btn" id="ceditbtn-${c.id}" data-created="${c.created_at}" style="width:auto;padding:0 6px;font-size:10px"
            onclick="openEditComment('${c.id}','${n_id}')">✎ ${cMinsLeft}m</button>` : '';
     const cEdited   = c.edited ? `<span style="font-size:9px;color:rgba(0,0,0,.35);font-weight:400;margin-left:4px">✎ edited</span>` : '';
     return `
@@ -901,23 +901,13 @@ async function cancelEditComment(commentId, noteId) {
 
 /* ── COUNTDOWN TICKER ── */
 setInterval(() => {
-  document.querySelectorAll('[id^="editbtn-"]').forEach(btn => {
-    const noteId = btn.id.replace('editbtn-','');
-    const wrap   = document.getElementById(`wrap-${noteId}`);
-    if (!wrap) return;
-    const created = wrap.querySelector('.note-author')?.dataset?.created;
-    // Use data attr — fall through to remove if expired
-    const ageMs   = btn.dataset.created ? Date.now()-new Date(btn.dataset.created).getTime() : EDIT_WINDOW_MS;
-    const mins    = Math.ceil((EDIT_WINDOW_MS - ageMs) / 60000);
+  document.querySelectorAll('[id^="editbtn-"], [id^="ceditbtn-"]').forEach(btn => {
+    if (!btn.dataset.created) return;
+    const ageMs = Date.now() - new Date(btn.dataset.created).getTime();
+    const mins  = Math.ceil((EDIT_WINDOW_MS - ageMs) / 60000);
     if (mins <= 0) { btn.remove(); } else { btn.textContent = `✎ ${mins}m`; }
   });
-  document.querySelectorAll('[id^="ceditbtn-"]').forEach(btn => {
-    const parts  = btn.id.replace('ceditbtn-','');
-    const ageMs  = btn.dataset.created ? Date.now()-new Date(btn.dataset.created).getTime() : EDIT_WINDOW_MS;
-    const mins   = Math.ceil((EDIT_WINDOW_MS - ageMs) / 60000);
-    if (mins <= 0) { btn.remove(); } else { btn.textContent = `✎ ${mins}m`; }
-  });
-}, 30000); // tick every 30 seconds
+}, 30000);
 
 /* ── OVERLAY HELPERS ── */
 function closeOverlay(id){document.getElementById(id).classList.remove('open');pendingDelId=null;pendingStickyId=null;pendingEditId=null;}
@@ -936,7 +926,15 @@ function toast(msg,type='ok'){
 
 /* ── BOOT ── */
 loadNotes();
-setInterval(loadNotes,60000);
+
+// Auto-refresh — skip if a panel is open or modal is active or user is editing
+setInterval(() => {
+  const anyOverlayOpen   = document.querySelector('.overlay.open');
+  const anyCommentOpen   = document.querySelector('.comments-panel.open');
+  const anyEditInProgress= document.querySelector('.comment-edit-area');
+  if (anyOverlayOpen || anyCommentOpen || anyEditInProgress) return;
+  loadNotes();
+}, 60000);
 </script>
 </body>
 </html>
