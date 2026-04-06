@@ -398,6 +398,12 @@ let savedName      = localStorage.getItem('itu_commenter_name') || '';
 
 /* ── HELPERS ── */
 const escHtml    = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// Convert URLs in already-escaped text into clickable links
+function linkify(text) {
+  return text.replace(/(https?:\/\/[^\s<>"]+)/g,
+    '<a href="$1" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color:#1a3a5c;text-decoration:underline;word-break:break-all">$1</a>');
+}
 const fmtDate    = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 const fmtTime    = d => new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 const fmtDateTime= d => `${fmtDate(d)} ${fmtTime(d)}`;
@@ -451,7 +457,7 @@ function buildNoteCard(n, countMap, lastMap) {
           <div class="note-subject">${escHtml(n.subject)}<span class="sticky-chevron"${n.sticky?'':' style="display:none"'}>▾</span></div>
           <div class="note-author">${escHtml(n.name)} · ${fmtDate(n.created_at)}</div>
         </div>
-        <div class="note-body">${escHtml(n.body).replace(/\n/g,'<br>')}</div>
+        <div class="note-body">${linkify(escHtml(n.body).replace(/\n/g,'<br>'))}</div>
         <div class="note-footer">
           <div>
             <div class="note-expiry${soon?' warn':''}">${expiryText}</div>
@@ -603,7 +609,7 @@ async function loadComments(noteId) {
         <span>${escHtml(c.name)}</span>
         <span class="ctime">${fmtDateTime(c.created_at)}</span>
       </div>
-      <div class="comment-text">${escHtml(c.body).replace(/\n/g,'<br>')}</div>
+      <div class="comment-text">${linkify(escHtml(c.body).replace(/\n/g,'<br>'))}</div>
     </div>`).join('');
   list.scrollTop = list.scrollHeight;
 }
