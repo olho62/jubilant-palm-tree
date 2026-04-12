@@ -311,3 +311,6 @@ header {
 .edit-btn-comment { width:auto; padding:0 6px; font-size:10px; }
 .edited-marker    { font-size:9px; color:rgba(0,0,0,.35); font-weight:400; margin-left:4px; }
 .comment-meta-right { display:flex; align-items:center; gap:5px; }
+
+/* COMMENT FORM FOOTER */
+.comment-form-footer { display:flex; justify-content:flex-end; align-items:center; gap:8px; }
