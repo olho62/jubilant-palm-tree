@@ -276,3 +276,29 @@ header {
   .note-wrap { box-shadow:0 0 0 1px #ccc; }
   .comments-panel { display:flex !important; }
 }
+
+/* LEGEND DOTS — replaces inline style="background:..." */
+.dot-2d  { background:#f8bbd0; }
+.dot-4d  { background:#ffe0b2; }
+.dot-1w  { background:#fff9c4; }
+.dot-2w  { background:#c8e6c9; }
+.dot-1m  { background:#bbdefb; }
+
+/* ARCHIVE BACK BUTTON */
+.btn-sm { padding:4px 12px; font-size:12px; }
+
+/* NOTE WARNING BOX — replaces inline style on add note modal */
+.note-warning {
+  background:#fff3cd; border-left:4px solid #e65100;
+  padding:10px 14px; border-radius:5px; font-size:12.5px;
+  color:#4a2800; margin-bottom:20px; line-height:1.5;
+}
+
+/* TEXTAREA SHORT — replaces inline style="min-height:90px" */
+.textarea-short { min-height:90px; }
+
+/* BUTTON VARIANTS — replaces inline style="background:..." on buttons */
+.btn-danger { background:#c62828; color:#fff; }
+.btn-danger:hover { background:#b71c1c; }
+.btn-gold   { background:#b8860b; color:#fff; }
+.btn-gold:hover { background:#9a7209; }
