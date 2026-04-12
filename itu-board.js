@@ -21,7 +21,7 @@ const escHtml    = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 
 function linkify(text) {
   return text.replace(/(https?:\/\/[^\s<>"]+)/g,
-    '<a href="$1" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color:#1a3a5c;text-decoration:underline;word-break:break-all">$1</a>');
+    '<a href="$1" target="_blank" rel="noopener noreferrer" class="linkify-link">$1</a>');
 }
 const fmtDate    = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 const fmtTime    = d => new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
@@ -78,7 +78,7 @@ function buildNoteCard(n, countMap, lastMap) {
            onclick="${n.sticky ? `toggleStickyExpand('${n.id}')` : `toggleComments('${n.id}')`}">
         ${stickyStripe}
         <div class="note-top">
-          <div class="note-subject">${escHtml(n.subject)}<span class="sticky-chevron"${n.sticky?'':' style="display:none"'}>▾</span></div>
+          <div class="note-subject">${escHtml(n.subject)}<span class="sticky-chevron"${n.sticky?'':'class="sticky-chevron-hidden"'}>▾</span></div>
           <div class="note-author">${escHtml(n.name)} · ${fmtDate(n.created_at)}</div>
         </div>
         <div class="note-body">${linkify(escHtml(n.body).replace(/\n/g,'<br>'))}</div>
@@ -101,7 +101,7 @@ function buildNoteCard(n, countMap, lastMap) {
       </div>
       <div class="comments-panel" id="cpanel-${n.id}">
         <div class="comments-list" id="clist-${n.id}">
-          <div style="font-size:12px;color:#999;text-align:center;padding:8px">Loading…</div>
+          <div class="comments-loading">Loading…</div>
         </div>
         <div class="comment-form">
           <input type="text" id="cname-${n.id}" placeholder="Your name *" maxlength="80"
@@ -204,21 +204,21 @@ async function loadComments(noteId) {
   const {data,error} = await sb.from('comments').select('*').eq('note_id',noteId).order('created_at',{ascending:true});
   const n_id = noteId;
   if (error||!data||!data.length) {
-    list.innerHTML=`<div style="font-size:12px;color:#999;text-align:center;padding:8px 0">No comments yet — be the first to reply.</div>`;
+    list.innerHTML=`<div class="comments-empty">No comments yet — be the first to reply.</div>`;
     return;
   }
   list.innerHTML = data.map(c => {
     const cAgeMs    = Date.now() - new Date(c.created_at).getTime();
     const cMinsLeft = Math.ceil((EDIT_WINDOW_MS - cAgeMs) / 60000);
     const cEditBtn  = (cAgeMs < EDIT_WINDOW_MS)
-      ? `<button class="note-btn edit-btn" id="ceditbtn-${c.id}" data-created="${c.created_at}" style="width:auto;padding:0 6px;font-size:10px"
+      ? `<button class="note-btn edit-btn" id="ceditbtn-${c.id}" data-created="${c.created_at}" class="edit-btn-comment"
            onclick="openEditComment('${c.id}','${n_id}')">✎ ${cMinsLeft}m</button>` : '';
-    const cEdited = c.edited ? `<span style="font-size:9px;color:rgba(0,0,0,.35);font-weight:400;margin-left:4px">✎ edited</span>` : '';
+    const cEdited = c.edited ? `<span class="edited-marker">✎ edited</span>` : '';
     return `
       <div class="comment-item" id="citem-${c.id}">
         <div class="comment-meta">
           <span>${escHtml(c.name)}${cEdited}</span>
-          <div style="display:flex;align-items:center;gap:5px">
+          <div class="comment-meta-right">
             ${cEditBtn}
             <span class="ctime">${fmtDateTime(c.created_at)}</span>
           </div>
