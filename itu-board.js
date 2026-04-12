@@ -9,25 +9,25 @@ if (SUPABASE_URL.includes('YOUR_')) document.getElementById('setupWarn').style.d
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let isAdmin        = false;
-let showArchive    = false;
-let pendingDelId   = null;
+let isAdmin         = false;
+let showArchive     = false;
+let pendingDelId    = null;
 let pendingStickyId = null;
 let pendingEditId   = null;
-let savedName      = localStorage.getItem('itu_commenter_name') || '';
+let savedName       = localStorage.getItem('itu_commenter_name') || '';
 
 /* ── HELPERS ── */
-const escHtml    = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const escHtml     = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtDate     = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+const fmtTime     = d => new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+const fmtDateTime = d => `${fmtDate(d)} ${fmtTime(d)}`;
+const daysLeft    = exp => Math.ceil((new Date(exp) - new Date()) / 86400000);
+const retentionClass = {2:'note-2day',4:'note-4day',7:'note-1week',14:'note-2week',30:'note-1month'};
 
 function linkify(text) {
   return text.replace(/(https?:\/\/[^\s<>"]+)/g,
     '<a href="$1" target="_blank" rel="noopener noreferrer" class="linkify-link">$1</a>');
 }
-const fmtDate    = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-const fmtTime    = d => new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-const fmtDateTime= d => `${fmtDate(d)} ${fmtTime(d)}`;
-const daysLeft   = exp => Math.ceil((new Date(exp) - new Date()) / 86400000);
-const retentionClass = {2:'note-2day',4:'note-4day',7:'note-1week',14:'note-2week',30:'note-1month'};
 
 /* ── BUILD NOTE CARD HTML ── */
 function buildNoteCard(n, countMap, lastMap) {
@@ -53,32 +53,35 @@ function buildNoteCard(n, countMap, lastMap) {
 
   const ageMs    = Date.now() - new Date(n.created_at).getTime();
   const minsLeft = Math.ceil((EDIT_WINDOW_MS - ageMs) / 60000);
-  const editBtn  = (ageMs < EDIT_WINDOW_MS)
-    ? `<button class="note-btn edit-btn" id="editbtn-${n.id}" data-created="${n.created_at}" title="Edit this note"
-         onclick="event.stopPropagation();openEditNote('${n.id}')">✎ ${minsLeft}m</button>` : '';
+
+  // All buttons use data-action and data-id — no onclick
+  const editBtn = (ageMs < EDIT_WINDOW_MS)
+    ? `<button class="note-btn edit-btn" id="editbtn-${n.id}" data-action="edit-note" data-id="${n.id}" data-created="${n.created_at}" title="Edit this note">✎ ${minsLeft}m</button>` : '';
 
   const stickyReqBtn = (!n.sticky && !n.sticky_requested && !isAdmin)
-    ? `<button class="note-btn sticky-req" title="Request permanent note" onclick="event.stopPropagation();openStickyRequest('${n.id}')">★</button>` : '';
+    ? `<button class="note-btn sticky-req" data-action="req-sticky" data-id="${n.id}" title="Request permanent note">★</button>` : '';
   const delBtn = (!n.deletion_requested && !isAdmin)
-    ? `<button class="note-btn del-req" title="Request deletion" onclick="event.stopPropagation();openDelRequest('${n.id}')">✕</button>` : '';
+    ? `<button class="note-btn del-req" data-action="req-del" data-id="${n.id}" title="Request deletion">✕</button>` : '';
 
   const adminStickyBtn   = isAdmin && !n.sticky
-    ? `<button class="note-btn sticky-req" title="Make permanent" onclick="event.stopPropagation();adminMakeSticky('${n.id}')">★</button>` : '';
+    ? `<button class="note-btn sticky-req" data-action="admin-sticky" data-id="${n.id}" title="Make permanent">★</button>` : '';
   const adminUnStickyBtn = isAdmin && n.sticky
-    ? `<button class="note-btn sticky-req" title="Remove permanent status" onclick="event.stopPropagation();adminUnsticky('${n.id}')">☆</button>` : '';
+    ? `<button class="note-btn sticky-req" data-action="admin-unsticky" data-id="${n.id}" title="Remove permanent status">☆</button>` : '';
   const adminDelBtn = isAdmin
-    ? `<button class="note-btn del-req" title="Delete note" onclick="event.stopPropagation();adminDelete('${n.id}')">🗑️</button>` : '';
+    ? `<button class="note-btn del-req" data-action="admin-del" data-id="${n.id}" title="Delete note">🗑️</button>` : '';
 
   const badgeLabel = hasC ? `💬 ${cCount} comment${cCount>1?'s':''}` : `💬 Comment`;
   const badgeLast  = hasC ? `<span class="cb-last">Last: ${fmtDateTime(lastMap[n.id])}</span>` : '';
 
+  const noteAction = n.sticky ? 'toggle-sticky' : 'toggle-comments';
+  const chevronClass = n.sticky ? 'sticky-chevron' : 'sticky-chevron sticky-chevron-hidden';
+
   return `
     <div class="note-wrap${n.sticky?' is-sticky':''}" id="wrap-${n.id}">
-      <div class="note ${cls}${n.sticky?' sticky-collapsed':''}" id="note-${n.id}"
-           onclick="${n.sticky ? `toggleStickyExpand('${n.id}')` : `toggleComments('${n.id}')`}">
+      <div class="note ${cls}${n.sticky?' sticky-collapsed':''}" id="note-${n.id}" data-action="${noteAction}" data-id="${n.id}">
         ${stickyStripe}
         <div class="note-top">
-          <div class="note-subject">${escHtml(n.subject)}<span class="sticky-chevron"${n.sticky?'':'class="sticky-chevron-hidden"'}>▾</span></div>
+          <div class="note-subject">${escHtml(n.subject)}<span class="${chevronClass}">▾</span></div>
           <div class="note-author">${escHtml(n.name)} · ${fmtDate(n.created_at)}</div>
         </div>
         <div class="note-body">${linkify(escHtml(n.body).replace(/\n/g,'<br>'))}</div>
@@ -89,10 +92,10 @@ function buildNoteCard(n, countMap, lastMap) {
           </div>
           <div class="note-actions">
             <span class="comment-badge ${hasC?'has-comments':''}" id="cbadge-${n.id}"
-                  onclick="event.stopPropagation();${n.sticky?`expandAndComment('${n.id}')`:``}">
+              data-action="${n.sticky?'expand-comment':'toggle-comments'}" data-id="${n.id}">
               ${badgeLabel}${badgeLast}
             </span>
-            <button class="note-btn" title="Print this note" onclick="event.stopPropagation();printNote(this)">🖨️</button>
+            <button class="note-btn" data-action="print-note" data-id="${n.id}" title="Print this note">🖨️</button>
             ${editBtn}
             ${stickyReqBtn}${delBtn}
             ${adminStickyBtn}${adminUnStickyBtn}${adminDelBtn}
@@ -109,7 +112,7 @@ function buildNoteCard(n, countMap, lastMap) {
           <textarea id="cbody-${n.id}" placeholder="Add a comment… (max 180 characters)"
             maxlength="${MAX_COMMENT}" data-note-id="${n.id}" class="comment-body-input"></textarea>
           <div class="char-count" id="ccount-${n.id}">0 / ${MAX_COMMENT}</div>
-          <button class="btn-comment" onclick="submitComment('${n.id}')">Post Comment</button>
+          <button class="btn-comment" data-action="post-comment" data-id="${n.id}">Post Comment</button>
         </div>
       </div>
     </div>`;
@@ -201,7 +204,6 @@ async function loadComments(noteId) {
   const list = document.getElementById(`clist-${noteId}`);
   if (!list) return;
   const {data,error} = await sb.from('comments').select('*').eq('note_id',noteId).order('created_at',{ascending:true});
-  const n_id = noteId;
   if (error||!data||!data.length) {
     list.innerHTML=`<div class="comments-empty">No comments yet — be the first to reply.</div>`;
     return;
@@ -210,8 +212,9 @@ async function loadComments(noteId) {
     const cAgeMs    = Date.now() - new Date(c.created_at).getTime();
     const cMinsLeft = Math.ceil((EDIT_WINDOW_MS - cAgeMs) / 60000);
     const cEditBtn  = (cAgeMs < EDIT_WINDOW_MS)
-      ? `<button class="note-btn edit-btn" id="ceditbtn-${c.id}" data-created="${c.created_at}" class="edit-btn-comment"
-           onclick="openEditComment('${c.id}','${n_id}')">✎ ${cMinsLeft}m</button>` : '';
+      ? `<button class="note-btn edit-btn edit-btn-comment" id="ceditbtn-${c.id}"
+           data-action="edit-comment" data-comment-id="${c.id}" data-note-id="${noteId}"
+           data-created="${c.created_at}">✎ ${cMinsLeft}m</button>` : '';
     const cEdited = c.edited ? `<span class="edited-marker">✎ edited</span>` : '';
     return `
       <div class="comment-item" id="citem-${c.id}">
@@ -230,17 +233,18 @@ async function loadComments(noteId) {
 
 /* ── CHAR COUNT ── */
 function updateCharCount(noteId) {
-  const body=document.getElementById(`cbody-${noteId}`);
-  const counter=document.getElementById(`ccount-${noteId}`);
-  const len=body.value.length;
-  counter.textContent=`${len} / ${MAX_COMMENT}`;
-  counter.className=`char-count${len>MAX_COMMENT-20?' warn':''}`;
+  const body    = document.getElementById(`cbody-${noteId}`);
+  const counter = document.getElementById(`ccount-${noteId}`);
+  if (!body||!counter) return;
+  const len = body.value.length;
+  counter.textContent = `${len} / ${MAX_COMMENT}`;
+  counter.className   = `char-count${len>MAX_COMMENT-20?' warn':''}`;
 }
 
 /* ── SUBMIT COMMENT ── */
 async function submitComment(noteId) {
-  const name=document.getElementById(`cname-${noteId}`).value.trim();
-  const body=document.getElementById(`cbody-${noteId}`).value.trim();
+  const name = document.getElementById(`cname-${noteId}`).value.trim();
+  const body = document.getElementById(`cbody-${noteId}`).value.trim();
   if (!name){toast('Please enter your name','err');return;}
   if (!body){toast('Please write a comment','err');return;}
   if (body.length>MAX_COMMENT){toast(`Max ${MAX_COMMENT} characters`,'err');return;}
@@ -260,13 +264,13 @@ async function submitComment(noteId) {
 }
 
 /* ── PRINT ── */
-function printNote(btn) {
-  const note=btn.closest('.note');
-  const subject=note.querySelector('.note-subject').childNodes[0].nodeValue.trim();
-  const author=note.querySelector('.note-author').innerHTML;
-  const body=note.querySelector('.note-body').innerHTML;
-  const expiry=note.querySelector('.note-expiry').textContent;
-  const w=window.open('','_blank','width=620,height=560');
+function printNote(noteId) {
+  const wrap    = document.getElementById(`wrap-${noteId}`);
+  const subject = wrap.querySelector('.note-subject').childNodes[0].nodeValue.trim();
+  const author  = wrap.querySelector('.note-author').innerHTML;
+  const body    = wrap.querySelector('.note-body').innerHTML;
+  const expiry  = wrap.querySelector('.note-expiry').textContent;
+  const w = window.open('','_blank','width=620,height=560');
   w.document.write(`<!DOCTYPE html><html><head><title>Note — ITU Board</title>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
@@ -336,10 +340,10 @@ function openAdd() {
 }
 
 async function submitNote() {
-  const name=document.getElementById('fName').value.trim();
-  const subject=document.getElementById('fSubject').value.trim();
-  const body=document.getElementById('fBody').value.trim();
-  const retention=parseInt(document.getElementById('fRetention').value);
+  const name      = document.getElementById('fName').value.trim();
+  const subject   = document.getElementById('fSubject').value.trim();
+  const body      = document.getElementById('fBody').value.trim();
+  const retention = parseInt(document.getElementById('fRetention').value);
   if (!name||!subject||!body){toast('Please complete all required fields','err');return;}
   const expires=new Date();
   expires.setDate(expires.getDate()+retention);
@@ -390,10 +394,10 @@ async function submitStickyRequest() {
 /* ── EDIT NOTE ── */
 function openEditNote(id) {
   pendingEditId=id;
-  const wrap=document.getElementById(`wrap-${id}`);
-  const subject=wrap.querySelector('.note-subject').childNodes[0].nodeValue.trim();
-  const bodyEl=wrap.querySelector('.note-body');
-  const bodyText=bodyEl.innerText||bodyEl.textContent;
+  const wrap    = document.getElementById(`wrap-${id}`);
+  const subject = wrap.querySelector('.note-subject').childNodes[0].nodeValue.trim();
+  const bodyEl  = wrap.querySelector('.note-body');
+  const bodyText= bodyEl.innerText||bodyEl.textContent;
   document.getElementById('eSubject').value=subject;
   document.getElementById('eBody').value=bodyText;
   document.getElementById('editOverlay').classList.add('open');
@@ -402,7 +406,7 @@ function openEditNote(id) {
 
 async function submitEditNote() {
   const subject=document.getElementById('eSubject').value.trim();
-  const body=document.getElementById('eBody').value.trim();
+  const body   =document.getElementById('eBody').value.trim();
   if (!subject||!body){toast('Please complete all fields','err');return;}
   const {error}=await sb.from('notes').update({subject,body,edited:true,edited_at:new Date().toISOString()}).eq('id',pendingEditId);
   if (error){toast('Error: '+error.message,'err');return;}
@@ -417,15 +421,15 @@ function openEditComment(commentId, noteId) {
   textEl.innerHTML=`
     <textarea class="comment-edit-area" id="cedit-${commentId}" maxlength="${MAX_COMMENT}">${escHtml(currentText)}</textarea>
     <div class="comment-edit-actions">
-      <button class="btn-cancel-comment" onclick="cancelEditComment('${commentId}','${noteId}')">Cancel</button>
-      <button class="btn-save-comment" onclick="submitEditComment('${commentId}','${noteId}')">Save</button>
+      <button class="btn-cancel-comment" data-action="cancel-edit-comment" data-comment-id="${commentId}" data-note-id="${noteId}">Cancel</button>
+      <button class="btn-save-comment" data-action="save-edit-comment" data-comment-id="${commentId}" data-note-id="${noteId}">Save</button>
     </div>`;
   const ta=document.getElementById(`cedit-${commentId}`);
   ta.focus(); ta.selectionStart=ta.value.length;
 }
 
 async function submitEditComment(commentId, noteId) {
-  const ta=document.getElementById(`cedit-${commentId}`);
+  const ta  =document.getElementById(`cedit-${commentId}`);
   const body=ta?ta.value.trim():'';
   if (!body){toast('Comment cannot be empty','err');return;}
   if (body.length>MAX_COMMENT){toast(`Max ${MAX_COMMENT} characters`,'err');return;}
@@ -434,20 +438,21 @@ async function submitEditComment(commentId, noteId) {
   toast('Comment updated','ok'); loadComments(noteId);
 }
 
-async function cancelEditComment(commentId, noteId) { loadComments(noteId); }
-
 /* ── COUNTDOWN TICKER ── */
 setInterval(() => {
   document.querySelectorAll('[id^="editbtn-"], [id^="ceditbtn-"]').forEach(btn => {
     if (!btn.dataset.created) return;
     const ageMs=Date.now()-new Date(btn.dataset.created).getTime();
-    const mins=Math.ceil((EDIT_WINDOW_MS-ageMs)/60000);
+    const mins =Math.ceil((EDIT_WINDOW_MS-ageMs)/60000);
     if (mins<=0){btn.remove();}else{btn.textContent=`✎ ${mins}m`;}
   });
 }, 30000);
 
 /* ── OVERLAY HELPERS ── */
-function closeOverlay(id){document.getElementById(id).classList.remove('open');pendingDelId=null;pendingStickyId=null;pendingEditId=null;}
+function closeOverlay(id){
+  document.getElementById(id).classList.remove('open');
+  pendingDelId=null; pendingStickyId=null; pendingEditId=null;
+}
 
 /* ── TOAST ── */
 let toastTimer;
@@ -458,8 +463,66 @@ function toast(msg,type='ok'){
   toastTimer=setTimeout(()=>el.className=`toast ${type}`,3200);
 }
 
-/* ── BOOT ── */
-// Event delegation for dynamically generated comment inputs
+/* ── EVENT DELEGATION — single listener on document handles all dynamic clicks ── */
+document.addEventListener('click', async e => {
+  // Walk up to find the element with a data-action
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+
+  const action = el.dataset.action;
+  const id     = el.dataset.id;
+
+  // Stop note expand/collapse from firing when clicking buttons inside a note
+  if (action !== 'toggle-comments' && action !== 'toggle-sticky' && action !== 'expand-comment') {
+    e.stopPropagation();
+  }
+
+  switch (action) {
+    case 'toggle-comments':   await toggleComments(id);      break;
+    case 'toggle-sticky':     toggleStickyExpand(id);        break;
+    case 'expand-comment':    await expandAndComment(id);    break;
+    case 'print-note':        printNote(id);                 break;
+    case 'edit-note':         openEditNote(id);              break;
+    case 'req-del':           openDelRequest(id);            break;
+    case 'req-sticky':        openStickyRequest(id);         break;
+    case 'admin-sticky':      await adminMakeSticky(id);     break;
+    case 'admin-unsticky':    await adminUnsticky(id);       break;
+    case 'admin-del':         await adminDelete(id);         break;
+    case 'post-comment':      await submitComment(id);       break;
+    case 'edit-comment':
+      openEditComment(el.dataset.commentId, el.dataset.noteId);
+      break;
+    case 'save-edit-comment':
+      await submitEditComment(el.dataset.commentId, el.dataset.noteId);
+      break;
+    case 'cancel-edit-comment':
+      await loadComments(el.dataset.noteId);
+      break;
+  }
+});
+
+/* ── STATIC EVENT LISTENERS ── */
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('archiveBtn').addEventListener('click', toggleArchive);
+  document.getElementById('adminBtn').addEventListener('click', toggleAdmin);
+  document.getElementById('addBtn').addEventListener('click', openAdd);
+  document.getElementById('archiveBackBtn').addEventListener('click', toggleArchive);
+  document.getElementById('addCancelBtn').addEventListener('click', () => closeOverlay('addOverlay'));
+  document.getElementById('addSubmitBtn').addEventListener('click', submitNote);
+  document.getElementById('delCancelBtn').addEventListener('click', () => closeOverlay('delOverlay'));
+  document.getElementById('delSubmitBtn').addEventListener('click', submitDelRequest);
+  document.getElementById('stickyCancelBtn').addEventListener('click', () => closeOverlay('stickyOverlay'));
+  document.getElementById('stickySubmitBtn').addEventListener('click', submitStickyRequest);
+  document.getElementById('editCancelBtn').addEventListener('click', () => closeOverlay('editOverlay'));
+  document.getElementById('editSubmitBtn').addEventListener('click', submitEditNote);
+
+  // Close overlays on backdrop click
+  document.querySelectorAll('.overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target===o) o.classList.remove('open'); });
+  });
+});
+
+/* ── INPUT DELEGATION ── */
 document.addEventListener('input', e => {
   if (e.target.classList.contains('comment-name-input')) {
     savedName = e.target.value;
@@ -470,42 +533,12 @@ document.addEventListener('input', e => {
   }
 });
 
+/* ── BOOT ── */
 loadNotes();
 setInterval(() => {
-  const anyOverlayOpen   =document.querySelector('.overlay.open');
-  const anyCommentOpen   =document.querySelector('.comments-panel.open');
-  const anyEditInProgress=document.querySelector('.comment-edit-area');
+  const anyOverlayOpen    = document.querySelector('.overlay.open');
+  const anyCommentOpen    = document.querySelector('.comments-panel.open');
+  const anyEditInProgress = document.querySelector('.comment-edit-area');
   if (anyOverlayOpen||anyCommentOpen||anyEditInProgress) return;
   loadNotes();
 }, 60000);
-
-/* ── STATIC EVENT LISTENERS (replaces all inline onclick in HTML) ── */
-document.addEventListener('DOMContentLoaded', () => {
-
-  // Header buttons
-  document.getElementById('archiveBtn').addEventListener('click', toggleArchive);
-  document.getElementById('adminBtn').addEventListener('click', toggleAdmin);
-  document.getElementById('addBtn').addEventListener('click', openAdd);
-  document.getElementById('archiveBackBtn').addEventListener('click', toggleArchive);
-
-  // Add note modal
-  document.getElementById('addCancelBtn').addEventListener('click', () => closeOverlay('addOverlay'));
-  document.getElementById('addSubmitBtn').addEventListener('click', submitNote);
-
-  // Deletion modal
-  document.getElementById('delCancelBtn').addEventListener('click', () => closeOverlay('delOverlay'));
-  document.getElementById('delSubmitBtn').addEventListener('click', submitDelRequest);
-
-  // Sticky modal
-  document.getElementById('stickyCancelBtn').addEventListener('click', () => closeOverlay('stickyOverlay'));
-  document.getElementById('stickySubmitBtn').addEventListener('click', submitStickyRequest);
-
-  // Edit note modal
-  document.getElementById('editCancelBtn').addEventListener('click', () => closeOverlay('editOverlay'));
-  document.getElementById('editSubmitBtn').addEventListener('click', submitEditNote);
-
-  // Close overlays on backdrop click
-  document.querySelectorAll('.overlay').forEach(o => {
-    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
-  });
-});
