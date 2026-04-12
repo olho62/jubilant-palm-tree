@@ -449,9 +449,6 @@ setInterval(() => {
 
 /* ── OVERLAY HELPERS ── */
 function closeOverlay(id){document.getElementById(id).classList.remove('open');pendingDelId=null;pendingStickyId=null;pendingEditId=null;}
-document.querySelectorAll('.overlay').forEach(o=>{
-  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
-});
 
 /* ── TOAST ── */
 let toastTimer;
@@ -471,3 +468,34 @@ setInterval(() => {
   if (anyOverlayOpen||anyCommentOpen||anyEditInProgress) return;
   loadNotes();
 }, 60000);
+
+/* ── STATIC EVENT LISTENERS (replaces all inline onclick in HTML) ── */
+document.addEventListener('DOMContentLoaded', () => {
+
+  // Header buttons
+  document.getElementById('archiveBtn').addEventListener('click', toggleArchive);
+  document.getElementById('adminBtn').addEventListener('click', toggleAdmin);
+  document.getElementById('addBtn').addEventListener('click', openAdd);
+  document.getElementById('archiveBackBtn').addEventListener('click', toggleArchive);
+
+  // Add note modal
+  document.getElementById('addCancelBtn').addEventListener('click', () => closeOverlay('addOverlay'));
+  document.getElementById('addSubmitBtn').addEventListener('click', submitNote);
+
+  // Deletion modal
+  document.getElementById('delCancelBtn').addEventListener('click', () => closeOverlay('delOverlay'));
+  document.getElementById('delSubmitBtn').addEventListener('click', submitDelRequest);
+
+  // Sticky modal
+  document.getElementById('stickyCancelBtn').addEventListener('click', () => closeOverlay('stickyOverlay'));
+  document.getElementById('stickySubmitBtn').addEventListener('click', submitStickyRequest);
+
+  // Edit note modal
+  document.getElementById('editCancelBtn').addEventListener('click', () => closeOverlay('editOverlay'));
+  document.getElementById('editSubmitBtn').addEventListener('click', submitEditNote);
+
+  // Close overlays on backdrop click
+  document.querySelectorAll('.overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  });
+});
