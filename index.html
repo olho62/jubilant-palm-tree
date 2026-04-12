@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ITU Notice Board — QEQM Margate</title>
-  <!-- Security headers -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.supabase.co https://*.supabase.in; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
@@ -32,22 +31,22 @@
   <div class="header-url">tinyurl.com/qitu-nobo</div>
   <div class="header-right">
     <div class="legend">
-      <span><span class="legend-dot" style="background:#f8bbd0"></span>2d</span>
-      <span><span class="legend-dot" style="background:#ffe0b2"></span>4d</span>
-      <span><span class="legend-dot" style="background:#fff9c4"></span>1w</span>
-      <span><span class="legend-dot" style="background:#c8e6c9"></span>2w</span>
-      <span><span class="legend-dot" style="background:#bbdefb"></span>1m</span>
+      <span><span class="legend-dot dot-2d"></span>2d</span>
+      <span><span class="legend-dot dot-4d"></span>4d</span>
+      <span><span class="legend-dot dot-1w"></span>1w</span>
+      <span><span class="legend-dot dot-2w"></span>2w</span>
+      <span><span class="legend-dot dot-1m"></span>1m</span>
     </div>
     <div class="admin-chip" id="adminChip">ADMIN</div>
-    <button class="btn btn-ghost" id="archiveBtn" onclick="toggleArchive()">📦 Archive</button>
-    <button class="btn btn-ghost" onclick="toggleAdmin()" title="Admin login">🔐</button>
-    <button class="btn btn-primary" onclick="openAdd()">＋ Add Note</button>
+    <button class="btn btn-ghost" id="archiveBtn">📦 Archive</button>
+    <button class="btn btn-ghost" id="adminBtn" title="Admin login">🔐</button>
+    <button class="btn btn-primary" id="addBtn">＋ Add Note</button>
   </div>
 </header>
 
 <div class="archive-banner" id="archiveBanner">
   📦 Viewing the archive — notes here have passed their retention period.
-  <button class="btn btn-ghost" style="padding:4px 12px;font-size:12px" onclick="toggleArchive()">← Back to Board</button>
+  <button class="btn btn-ghost btn-sm" id="archiveBackBtn">← Back to Board</button>
 </div>
 
 <div class="patient-warning">
@@ -64,7 +63,7 @@
 <div class="overlay" id="addOverlay">
   <div class="modal">
     <h2>Add a Note</h2>
-    <div style="background:#fff3cd;border-left:4px solid #e65100;padding:10px 14px;border-radius:5px;font-size:12.5px;color:#4a2800;margin-bottom:20px;line-height:1.5">
+    <div class="note-warning">
       ⚠️ <strong>No patient information.</strong> Do not include patient names, NHS numbers, dates of birth, diagnoses or any other identifiable data.
     </div>
     <div class="fg"><label>Your Name *</label><input id="fName" type="text" placeholder="e.g. Dr Ahmed / Sister Patel" maxlength="80"></div>
@@ -81,8 +80,8 @@
       </select>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeOverlay('addOverlay')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitNote()">Add Note</button>
+      <button class="btn-cancel" id="addCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="addSubmitBtn">Add Note</button>
     </div>
   </div>
 </div>
@@ -92,10 +91,10 @@
   <div class="modal">
     <h2>Request Deletion</h2>
     <p class="hint">Your request will be sent to the board admin for review. You must provide a reason before they can action it.</p>
-    <div class="fg"><label>Reason for deletion *</label><textarea id="fReason" placeholder="Why should this note be removed?" style="min-height:90px"></textarea></div>
+    <div class="fg"><label>Reason for deletion *</label><textarea id="fReason" class="textarea-short" placeholder="Why should this note be removed?"></textarea></div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeOverlay('delOverlay')">Cancel</button>
-      <button class="btn btn-primary" style="background:#c62828" onclick="submitDelRequest()">Send Request</button>
+      <button class="btn-cancel" id="delCancelBtn">Cancel</button>
+      <button class="btn btn-danger" id="delSubmitBtn">Send Request</button>
     </div>
   </div>
 </div>
@@ -105,10 +104,10 @@
   <div class="modal">
     <h2>Request Sticky Note</h2>
     <p class="hint">Ask the board admin to make this note permanent so it never expires. Please give a brief reason why it should stay on the board indefinitely.</p>
-    <div class="fg"><label>Reason *</label><textarea id="fStickyReason" placeholder="Why should this note be made permanent?" style="min-height:90px"></textarea></div>
+    <div class="fg"><label>Reason *</label><textarea id="fStickyReason" class="textarea-short" placeholder="Why should this note be made permanent?"></textarea></div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeOverlay('stickyOverlay')">Cancel</button>
-      <button class="btn btn-primary" style="background:#b8860b" onclick="submitStickyRequest()">Send Request</button>
+      <button class="btn-cancel" id="stickyCancelBtn">Cancel</button>
+      <button class="btn btn-gold" id="stickySubmitBtn">Send Request</button>
     </div>
   </div>
 </div>
@@ -121,8 +120,8 @@
     <div class="fg"><label>Subject *</label><input id="eSubject" type="text" maxlength="100"></div>
     <div class="fg"><label>Message *</label><textarea id="eBody"></textarea></div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeOverlay('editOverlay')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitEditNote()">Save Changes</button>
+      <button class="btn-cancel" id="editCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="editSubmitBtn">Save Changes</button>
     </div>
   </div>
 </div>
