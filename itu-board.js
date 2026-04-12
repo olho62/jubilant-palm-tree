@@ -105,10 +105,9 @@ function buildNoteCard(n, countMap, lastMap) {
         </div>
         <div class="comment-form">
           <input type="text" id="cname-${n.id}" placeholder="Your name *" maxlength="80"
-            value="${escHtml(savedName)}"
-            oninput="savedName=this.value;localStorage.setItem('itu_commenter_name',this.value)">
+            value="${escHtml(savedName)}" data-note-id="${n.id}" class="comment-name-input">
           <textarea id="cbody-${n.id}" placeholder="Add a comment… (max 180 characters)"
-            maxlength="${MAX_COMMENT}" oninput="updateCharCount('${n.id}')"></textarea>
+            maxlength="${MAX_COMMENT}" data-note-id="${n.id}" class="comment-body-input"></textarea>
           <div class="char-count" id="ccount-${n.id}">0 / ${MAX_COMMENT}</div>
           <button class="btn-comment" onclick="submitComment('${n.id}')">Post Comment</button>
         </div>
@@ -460,6 +459,17 @@ function toast(msg,type='ok'){
 }
 
 /* ── BOOT ── */
+// Event delegation for dynamically generated comment inputs
+document.addEventListener('input', e => {
+  if (e.target.classList.contains('comment-name-input')) {
+    savedName = e.target.value;
+    localStorage.setItem('itu_commenter_name', e.target.value);
+  }
+  if (e.target.classList.contains('comment-body-input')) {
+    updateCharCount(e.target.dataset.noteId);
+  }
+});
+
 loadNotes();
 setInterval(() => {
   const anyOverlayOpen   =document.querySelector('.overlay.open');
